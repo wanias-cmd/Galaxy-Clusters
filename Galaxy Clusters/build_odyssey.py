@@ -65,7 +65,14 @@ build('mars');requestAnimationFrame(loop);"""
     if k == 'pilot':
         exitbtn = '<a class="btn" href="#hub" style="position:fixed;left:12px;top:118px;z-index:40;padding:6px 14px;font-size:13px;text-decoration:none;color:inherit;background:rgba(5,10,22,.8)">EXIT</a><div id="rot">'
         fuelmsg = "st.fuel=Math.max(0,st.fuel);if(st.fuel<=0&&msgT<=0)msg('OUT OF FUEL - press EXIT to leave','#ff5d6c');"
-        for a, b in [('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg)]:
+        TELE_DIV = '<div id="tele" style="position:absolute;right:calc(12px + env(safe-area-inset-right));top:172px;width:200px;font-size:11px;line-height:1.35;background:rgba(5,10,22,.72);border:1px solid var(--ln);border-radius:6px;padding:6px 10px"><div id="telh" style="pointer-events:auto;cursor:pointer;color:var(--am);font-weight:600;letter-spacing:.1em">MISSION TELEMETRY &#9662;</div><div id="telb"></div></div><div id="dash">'
+        TELE_JS = r"""function tele(dM,spd){if((tele.n=(tele.n||0)+1)%6)return;const t=st.t,fl=st.fw>0,kp=fl?6:2+((Math.abs(Math.sin(t/25))*2)|0),cls=fl?'M5.2':'C1.'+(((t|0)*7)%10),f=n=>Math.round(n).toLocaleString('en-US'),
+ph=stage==0?'Departure':stage<5?'Cruise':dM<760?'Orbit insertion':'Approach',sd=ship.position.distanceTo(earth.position)*.0334,need=130+(fire?60:0)+(st.sh?220:0),spent=Math.round(100+(100-st.fuel)*1.5+(100-st.hull)*4+t*.3),
+R=[['Phase',ph],['Mission time',Math.floor(t*.8)+' days'],['Velocity',spd.toFixed(2)+' km/s'],['Distance to target',f(dM*1e4)+' km'],['Distance travelled',f((st.trav||0)*1e4)+' km'],['Signal delay',sd<60?'&lt; 1 min':Math.round(sd/60)+' min'],['Fuel',Math.round(st.fuel)+'%',st.fuel<25],['Power gen / need','780 / '+need+' W'],['Battery',Math.round(st.pow)+'%',st.pow<25],['Data collected',(t*.05+stage*5).toFixed(1)+' GB'],['Space weather','Kp '+kp+' \u2022 '+cls,fl],['Spent','$'+spent+'M / $600M']];
+document.getElementById('telb').innerHTML=R.map(r=>'<div style="display:flex;justify-content:space-between;gap:6px"><span style="color:#8aa0c4">'+r[0]+'</span><b style="color:'+(r[2]?'#ff5d6c':'#dcebff')+'">'+r[1]+'</b></div>').join('')}
+document.getElementById('telh').onclick=()=>{const b=document.getElementById('telb');b.style.display=b.style.display=='none'?'':'none'};if(innerHeight<500)document.getElementById('telb').style.display='none';
+function hud(dM,spd){tele(dM,spd);"""
+        for a, b in [('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg), ('<div id="dash">', TELE_DIV), ('function hud(dM,spd){', TELE_JS), ('hud(dM,spd)}', 'st.trav=(st.trav||0)+vel.length()*dt;hud(dM,spd)}')]:
             if a not in h:
                 sys.exit('Pilot module: could not find ' + a)
             h = h.replace(a, b, 1)
