@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cosmic Event Simulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap"><link rel="stylesheet" href="../assets/common.css"></head><body>
+<canvas class="main" id="c"></canvas><a class="back" href="../index.html">← Hub</a>
+<div class="panel" style="right:12px;top:12px"><h3>Cosmic Event Simulator</h3><div class="chips" id="ev"></div>
+<label for="t"><small id="tl"></small> <span class="rd" id="tv"></span></label><input type="range" id="t">
+<div class="chips"><button class="chip" id="pl">▶ Play</button><button class="chip" id="fd" style="display:none">Find tightest alignment</button></div>
+<h4>Live numbers</h4><p id="r1" class="rd"></p><p id="r2" class="mu"></p><div class="tip" id="fa"></div></div>
+<div class="ov" id="ov"><div><h2>Cosmic Event Simulator</h2><ul><li>Pick an event with the <b>buttons at the top</b> of the panel.</li><li>Drag the <b>slider</b> to move through time, or press <b>Play</b>.</li><li>Solar and lunar eclipses show how the Sun, Moon and Earth line up.</li><li>In <b>Planet alignment</b> use <b>Find tightest alignment</b> to jump to the date the planets bunch up most.</li></ul><small>Safety: never look at the Sun without certified eclipse glasses.</small><br><br><button class="btn" id="go">START</button></div></div>
+<script>
+const $=i=>document.getElementById(i),TAU=Math.PI*2,cv=$('c'),x=cv.getContext('2d'),cl=(v,a,b)=>Math.max(a,Math.min(b,v));let W,H,d;
+function rs(){d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d}addEventListener('resize',rs);rs();
+const E=[{n:'Solar eclipse',l:'Time through the eclipse',a:0,b:1000,s:1,i:'In a solar eclipse the Moon passes between Earth and the Sun. The Moon is 400 times smaller than the Sun but also 400 times closer, so the two look the same size in the sky. That coincidence makes total eclipses possible.'},
+{n:'Lunar eclipse',l:'Time through the eclipse',a:0,b:1000,s:1,i:'In a lunar eclipse Earth\u2019s shadow falls on the Moon. The Moon turns red because Earth\u2019s atmosphere bends red sunlight around the planet onto the Moon: every sunrise and sunset on Earth at once.'},
+{n:'Meteor shower',l:'Meteors per hour (ZHR)',a:5,b:150,s:1,i:'Meteors are specks of comet dust burning up 80 to 100 km above you. Showers happen when Earth crosses a comet\u2019s trail. They seem to come from one point, the radiant, because of perspective, like rain seen from a moving car.'},
+{n:'Planet alignment',l:'Date',a:0,b:36525,s:1,i:'Planets orbit at different speeds, so they sometimes bunch on one side of the Sun. A perfect line of all planets never happens, because their orbits are tilted. Smaller spread means a closer alignment.'}];
+const V=[300,380,40,9814],PL=[['Mercury',87.97,252.25,.387,'#b8b8b8'],['Venus',224.7,181.98,.723,'#f2c27a'],['Earth',365.25,100.46,1,'#4aa8ff'],['Mars',687,355.45,1.524,'#e0693f'],['Jupiter',4332.6,34.4,5.203,'#e8c9a0'],['Saturn',10759,49.94,9.537,'#e6d6a0']];
+let ev=0,play=0,lt=performance.now(),ms=[];const ST=Array.from({length:260},()=>[Math.random(),Math.random(),Math.random()]);
+const lens=dd=>dd>=2?0:(2*Math.acos(dd/2)-(dd/2)*Math.sqrt(4-dd*dd))/Math.PI;
+const lon=(p,day)=>((p[2]+360*day/p[1])%360+360)%360;
+function spread(day){const a=PL.map(p=>lon(p,day)).sort((u,v)=>u-v);let g=360-a[a.length-1]+a[0];for(let i=1;i<a.length;i++)g=Math.max(g,a[i]-a[i-1]);return 360-g}
+const dt=day=>new Date(Date.UTC(2000,0,1,12)+day*864e5).toDateString();
+function sel(i){ev=i;const e=E[i],s=$('t');s.min=e.a;s.max=e.b;s.step=e.s;s.value=V[i];$('tl').textContent=e.l+': ';$('fa').textContent=e.i;$('fd').style.display=i==3?'':'none';
+$('ev').innerHTML=E.map((q,j)=>'<button class="chip '+(j==i?'on':'')+'" data-j="'+j+'">'+q.n+'</button>').join('');ms=[];upd()}
+function upd(){V[ev]=+$('t').value;const v=V[ev];let a='',b='';
+if(ev==0){const dd=Math.abs(v/1000-.5)*5,c=lens(dd);a=Math.round(c*100)+'% of the Sun is covered'+(c>.985?' · TOTAL ECLIPSE':c>0?' · partial':'');b='Totality lasts at most about 7.5 minutes. During it the sky darkens and the Sun\u2019s corona appears.';$('tv').textContent=(v/10).toFixed(0)+'%'}
+if(ev==1){const dd=Math.abs(v/1000-.5)*10,c=cl((3.6-dd)/2,0,1);a=Math.round(c*100)+'% of the Moon is inside Earth\u2019s dark shadow'+(c>.95?' · BLOOD MOON':'');b='Unlike a solar eclipse, a lunar eclipse is visible from everywhere on the night side of Earth, and it is safe to watch.';$('tv').textContent=(v/10).toFixed(0)+'%'}
+if(ev==2){a=v+' meteors per hour under perfect dark skies';b=v>100?'Like the Geminids or Perseids at their peak.':v>20?'A good shower.':'A quiet night.';$('tv').textContent=v}
+if(ev==3){a='Planets spread over '+spread(v).toFixed(0)+'° of their orbit around the Sun';b=dt(v)+' · A random date has a spread of around 200° or more.';$('tv').textContent=dt(v)}
+$('r1').textContent=a;$('r2').textContent=b}
+function sky(c1,c2){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,c1);g.addColorStop(1,c2);x.fillStyle=g;x.fillRect(0,0,W,H)}
+function stars(al){x.fillStyle='#fff';ST.forEach(s=>{x.globalAlpha=al*(.3+.7*s[2]);x.fillRect(s[0]*W,s[1]*H*.8,1.5,1.5)});x.globalAlpha=1}
+function hills(){x.fillStyle='#04060c';x.beginPath();x.moveTo(0,H);for(let i=0;i<=20;i++)x.lineTo(i*W/20,H*.88+Math.sin(i*1.7)*H*.02);x.lineTo(W,H);x.fill()}
+function solar(){const R=Math.min(W,H)*.12,cx=W/2,cy=H*.42,t=V[0]/1000,dd=Math.abs(t-.5)*5,c=lens(dd),m=(k,a,b)=>Math.round(a+(b-a)*k);const k=Math.pow(c,3);
+sky('rgb('+m(k,70,6)+','+m(k,140,10)+','+m(k,220,28)+')','rgb('+m(k,170,10)+','+m(k,205,14)+','+m(k,255,34)+')');if(c>.9)stars((c-.9)*10);
+if(c<.985){const g=x.createRadialGradient(cx,cy,R*.8,cx,cy,R*4);g.addColorStop(0,'rgba(255,240,180,'+(.6*(1-c))+')');g.addColorStop(1,'rgba(255,240,180,0)');x.fillStyle=g;x.fillRect(0,0,W,H);x.fillStyle='#fff6c8';x.beginPath();x.arc(cx,cy,R,0,TAU);x.fill()}
+else{x.strokeStyle='rgba(255,255,255,.8)';for(let i=0;i<36;i++){const a=i*TAU/36,l=R*(1.5+.6*Math.sin(i*5));x.lineWidth=2;x.beginPath();x.moveTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);x.lineTo(cx+Math.cos(a)*(R+l),cy+Math.sin(a)*(R+l));x.stroke()}}
+x.fillStyle='#050608';x.beginPath();x.arc(cx+(t-.5)*5*R,cy,R*1.01,0,TAU);x.fill();if(c>.97&&c<.995){x.fillStyle='#fff';x.shadowColor='#fff';x.shadowBlur=30;x.beginPath();x.arc(cx+R*.98,cy-R*.1,5,0,TAU);x.fill();x.shadowBlur=0}hills()}
+function lunar(){const R=Math.min(W,H)*.12,cx=W/2,cy=H*.4,t=V[1]/1000,sx=cx+(t-.5)*10*R;sky('#02030a','#0a1024');stars(.8);
+x.save();x.beginPath();x.arc(cx,cy,R,0,TAU);x.clip();const g=x.createRadialGradient(cx-R*.3,cy-R*.3,R*.1,cx,cy,R);g.addColorStop(0,'#f1efe6');g.addColorStop(1,'#a8a699');x.fillStyle=g;x.fillRect(cx-R,cy-R,2*R,2*R);x.fillStyle='rgba(120,120,110,.35)';[[.3,.2,.2],[-.3,-.1,.25],[.1,-.4,.15]].forEach(q=>{x.beginPath();x.arc(cx+q[0]*R,cy+q[1]*R,q[2]*R,0,TAU);x.fill()});
+x.fillStyle='rgba(0,0,0,.4)';x.beginPath();x.arc(sx,cy,4*R,0,TAU);x.fill();x.fillStyle='rgba(125,30,10,.85)';x.beginPath();x.arc(sx,cy,2.6*R,0,TAU);x.fill();x.restore();hills()}
+function meteor(dt){const rx=W*.6,ry=H*.28;sky('#01030a','#0b1230');stars(1);const n=V[2]/3600*dt*30;if(Math.random()<n){const a=Math.random()*TAU,r=60+Math.random()*Math.max(W,H)*.4;ms.push({x:rx+Math.cos(a)*r*.2,y:ry+Math.sin(a)*r*.2,a,l:0,life:.5+Math.random()*.4,t:0})}
+ms=ms.filter(m=>{m.t+=dt;m.l=m.t*Math.max(W,H)*1.1*.5;const s=m.l,h=Math.max(0,s-90),k=1-m.t/m.life,g=x.createLinearGradient(rx+Math.cos(m.a)*(.2+h),0,0,0);x.strokeStyle='rgba(255,'+(220-80*(1-k)|0)+',160,'+k+')';x.lineWidth=2;x.beginPath();x.moveTo(m.x+Math.cos(m.a)*h,m.y+Math.sin(m.a)*h);x.lineTo(m.x+Math.cos(m.a)*s,m.y+Math.sin(m.a)*s);x.stroke();return m.t<m.life});
+x.strokeStyle='rgba(79,216,255,.7)';x.setLineDash([3,4]);x.beginPath();x.arc(rx,ry,16,0,TAU);x.stroke();x.setLineDash([]);x.fillStyle='#8fd8ff';x.font='12px Chakra Petch';x.fillText('Radiant',rx+22,ry+4);hills()}
+function align(){sky('#02030a','#0a1024');stars(.5);const cx=W*.42,cy=H/2,R=Math.min(W*.8,H)*.46,day=V[3];const g=x.createRadialGradient(cx,cy,0,cx,cy,22);g.addColorStop(0,'#fff6c8');g.addColorStop(1,'rgba(255,180,84,0)');x.fillStyle=g;x.fillRect(cx-24,cy-24,48,48);
+PL.forEach(p=>{const r=R*Math.sqrt(p[3]/9.537),a=lon(p,day)*Math.PI/180;x.strokeStyle='rgba(79,216,255,.15)';x.beginPath();x.arc(cx,cy,r,0,TAU);x.stroke();x.strokeStyle='rgba(255,255,255,.12)';x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*R*1.05,cy-Math.sin(a)*R*1.05);x.stroke();x.fillStyle=p[4];x.beginPath();x.arc(cx+Math.cos(a)*r,cy-Math.sin(a)*r,p[0]=='Jupiter'||p[0]=='Saturn'?7:5,0,TAU);x.fill();x.fillStyle='#9fb4d8';x.font='11px Chakra Petch';x.fillText(p[0],cx+Math.cos(a)*r+8,cy-Math.sin(a)*r)})}
+function loop(t){requestAnimationFrame(loop);const q=Math.min(.05,(t-lt)/1e3);lt=t;if(play){if(ev<2){V[ev]=(V[ev]+q*80)%1000;$('t').value=V[ev]}if(ev==3){V[3]=(V[3]+q*60)%36525;$('t').value=V[3]}upd()}
+x.setTransform(d,0,0,d,0,0);[solar,lunar,()=>meteor(q),align][ev]()}
+$('ev').onclick=e=>{const j=e.target.dataset.j;if(j!=null)sel(+j)};$('t').oninput=upd;$('pl').onclick=e=>{play=1-play;e.target.textContent=play?'❚❚ Pause':'▶ Play'};
+$('fd').onclick=()=>{let b=V[3],m=1e9;for(let k=V[3]+30;k<V[3]+18262&&k<36525;k+=2){const s=spread(k);if(s<m){m=s;b=k}}V[3]=b;$('t').value=b;upd()};
+$('go').onclick=()=>$('ov').classList.add('off');sel(0);requestAnimationFrame(loop);
+</script></body></html>

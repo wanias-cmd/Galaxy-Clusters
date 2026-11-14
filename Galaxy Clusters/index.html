@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Odyssey: Space Explorer Hub</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#050914;--ln:#27407a;--tx:#e6eeff;--mu:#8fa5cf;--cy:#4fd8ff;--am:#ffb454;--vi:#9b8cff;--gn:#5cf0b0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font:15px/1.5 'Chakra Petch',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+button{font:inherit;color:var(--tx);cursor:pointer}small{color:var(--mu)}h1,h2,h3{margin:0}
+.screen{position:relative;z-index:2;display:none;min-height:100vh;padding:18px}.screen.on{display:block}
+.btn{padding:12px 26px;border-radius:8px;border:1px solid var(--cy);background:rgba(79,216,255,.1);font-weight:600;letter-spacing:.06em;transition:.2s}
+.btn:hover{background:rgba(79,216,255,.22);transform:translateY(-2px)}.btn.p{background:linear-gradient(90deg,#2aa7ff,#7a6bff);border:0;color:#fff;box-shadow:0 0 28px rgba(80,140,255,.45)}
+.glass{background:linear-gradient(160deg,rgba(22,38,84,.72),rgba(8,15,36,.84));border:1px solid var(--ln);border-radius:14px;backdrop-filter:blur(6px)}
+#splash.on{display:flex;flex-direction:column;justify-content:center;max-width:640px;margin-left:6vw}
+#splash h1{font-size:clamp(44px,9vw,92px);letter-spacing:.16em;line-height:1;background:linear-gradient(90deg,var(--cy),var(--vi),var(--am));-webkit-background-clip:text;background-clip:text;color:transparent}
+#splash h2{font-weight:500;letter-spacing:.3em;color:var(--mu);font-size:14px;margin:6px 0 18px}#splash p{color:var(--tx);max-width:520px}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto 14px}
+.logo{font-size:20px;font-weight:700;letter-spacing:.14em}.logo span{color:var(--cy)}
+#prog{display:flex;align-items:center;gap:10px;padding:6px 12px}#prog i{width:140px;height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden;display:block}#prog b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cy),var(--gn));transition:width .5s}
+.wrap{max-width:1180px;margin:0 auto}.hero{padding:6px 0 14px}.hero h2{font-size:clamp(24px,4vw,36px)}.hero p{color:var(--mu);max-width:620px;margin:6px 0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}
+.card{text-align:left;padding:0;overflow:hidden;transition:.25s;position:relative}.card:hover{transform:translateY(-6px);border-color:var(--cy);box-shadow:0 14px 36px rgba(0,0,0,.5),0 0 22px rgba(79,216,255,.25)}
+.card .tx{padding:12px 14px 14px}.card h3{font-size:17px;color:var(--cy)}.card p{margin:4px 0 8px;font-size:13.5px;color:var(--tx)}
+.tag{display:inline-block;padding:2px 9px;border-radius:12px;background:rgba(155,140,255,.2);font-size:11px;margin-right:4px}.ok{background:rgba(92,240,176,.22)!important}
+.art{height:130px;position:relative;overflow:hidden;--v:.5}
+.a-mars{background:linear-gradient(#1a0b14,#7a3a2a 55%,#b4532e 56%,#6a2a18)}
+.a-mars::before{content:'';position:absolute;left:-10%;right:-10%;bottom:-30px;height:70px;border-radius:50%;background:#8a3a20}
+.a-mars::after{content:'';position:absolute;left:50%;bottom:calc(32px + var(--v)*70px);width:14px;height:24px;border-radius:7px 7px 3px 3px;background:#eee;box-shadow:0 0 0 2px #9aa;transition:bottom .25s}
+.a-earth{background:radial-gradient(circle at 50% 50%,#050914,#050914)}
+.a-earth::before{content:'';position:absolute;left:50%;top:50%;width:calc(70px + var(--v)*20px);height:calc(70px + var(--v)*20px);margin:calc((70px + var(--v)*20px)/-2) 0 0 calc((70px + var(--v)*20px)/-2);border-radius:50%;background:radial-gradient(circle at 35% 30%,#8fd0ff,#2a6fc0 45%,#0b2a5c 75%);box-shadow:0 0 24px rgba(90,170,255,.6),inset -14px -10px 24px rgba(0,0,0,.6);transition:.25s}
+.a-earth::after{content:'';position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px;border:1px dashed rgba(79,216,255,.35);border-radius:50%}
+.a-bh{background:#02030a}
+.a-bh::before{content:'';position:absolute;left:50%;top:50%;width:calc(50px + var(--v)*80px);height:calc(50px + var(--v)*80px);margin:calc((50px + var(--v)*80px)/-2) 0 0 calc((50px + var(--v)*80px)/-2);border-radius:50%;background:radial-gradient(circle,#000 38%,#ffd28a 43%,#ff7a2a 52%,rgba(255,90,30,0) 70%);transition:.25s;animation:spin 8s linear infinite}
+.a-bh::after{content:'';position:absolute;left:10%;right:10%;top:50%;height:9px;margin-top:-4px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,170,80,.9),transparent 70%);transform:rotate(-12deg)}
+@keyframes spin{to{filter:hue-rotate(20deg) brightness(1.2)}}
+.a-ecl{background:#050914}.a-ecl::before{content:'';position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:50%;background:#ffd36a;box-shadow:0 0 40px 10px rgba(255,200,100,.5)}
+.a-ecl::after{content:'';position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:50%;background:#0a0d18;transform:translateX(calc((var(--v) - .5)*140px));transition:transform .2s}
+.a-pil{background:linear-gradient(#050914,#101a3a)}
+.a-pil::before{content:'';position:absolute;left:50%;top:48%;width:34px;height:60px;margin-left:-17px;background:linear-gradient(#e8ecf6,#8a93aa);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.a-pil::after{content:'';position:absolute;left:50%;top:calc(48% + 52px);width:14px;height:calc(6px + var(--v)*40px);margin-left:-7px;background:linear-gradient(#6fd8ff,transparent);border-radius:50%;transition:height .2s}
+#dr{position:fixed;top:0;right:0;bottom:0;width:min(450px,100%);z-index:50;transform:translateX(105%);transition:transform .4s cubic-bezier(.3,.8,.3,1);padding:16px;overflow:auto;border-radius:0;border-width:0 0 0 1px;background:rgba(6,11,28,.96)}
+#dr.open{transform:none}#dr h2{color:var(--cy);margin:10px 0 4px}#dr .art{border-radius:12px;height:170px}
+#dr h4{margin:14px 0 6px;color:var(--am);font-size:13px;letter-spacing:.12em;text-transform:uppercase}#dr ul{margin:0;padding-left:18px;font-size:14px}
+.ctl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}.ctl b{color:var(--cy)}
+input[type=range]{width:100%;accent-color:var(--cy)}.rd{font-size:20px;font-weight:600;color:var(--gn)}
+.x{float:right;border:1px solid var(--ln);background:none;border-radius:8px;padding:4px 12px}
+.md{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(2,5,14,.8);z-index:55;backdrop-filter:blur(4px)}.md.on{display:flex}
+.md>div{max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:20px}.md ol{padding-left:20px}.md li{margin:8px 0}.md b{color:var(--cy)}
+#spot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(2,5,14,.8),0 0 0 2px var(--am);transition:all .35s;pointer-events:none;z-index:60;display:none}
+#tip{position:fixed;z-index:61;max-width:300px;padding:14px;display:none}#tip p{margin:0 0 10px}#tip small{float:right}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);padding:10px 18px;z-index:70;display:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--am);outline-offset:2px}
+</style></head><body>
+<canvas id="bg"></canvas>
+<section id="splash" class="screen on"><h1>ODYSSEY</h1><h2>SPACE EXPLORER HUB</h2><p>Walk on Mars, look down on Earth, bend light around a black hole, watch an eclipse and pilot your own spaceship. Learn real science by touching it.</p>
+<div class="row"><button class="btn p" id="start">START EXPLORING</button><button class="btn" id="how1">HOW TO PLAY</button><button class="btn" id="tour1">GUIDED TOUR</button></div><p style="margin-top:20px"><small>Best on a phone held sideways or a laptop. Sound is off by default.</small></p></section>
+<section id="hub" class="screen"><div class="top"><div class="logo" id="logo">ODYSSEY <span>HUB</span></div><div id="prog" class="glass"><small>Explorer rank</small><i><b id="pb"></b></i><span id="pt">0 / 5</span></div><div class="row" style="margin:0"><button class="btn" id="how2">How to play</button><button class="btn" id="tour2">Guided tour</button></div></div>
+<div class="wrap"><div class="hero"><h2>Choose a mission</h2><p>Click any card to preview it. Try the slider inside to see the science change in front of you, then launch the module.</p></div><div class="cards" id="cards"></div></div></section>
+<aside id="dr" class="glass" aria-label="Module preview"><button class="x" id="dx">Close ✕</button><div id="drb"></div></aside>
+<div class="md" id="how"><div class="glass"><h2 style="color:var(--am)">How to play</h2><ol>
+<li><b>Pick a module.</b> Click or tap any card on the hub. A preview panel slides in from the right.</li>
+<li><b>Try the slider.</b> Drag the slider in the preview. The picture and the numbers update live. This is how you learn the science.</li>
+<li><b>Check the controls.</b> The Controls box lists the keys (computer) and touch gestures (phone) for that module.</li>
+<li><b>Press Launch.</b> The module opens full screen. On a phone, turn the device sideways.</li>
+<li><b>Earn your rank.</b> Each module you explore fills the Explorer rank bar at the top. Explore all 5 to become Commander.</li>
+<li><b>Need help?</b> Press How to play or Guided tour any time.</li></ol><div class="row"><button class="btn p" id="hx">GOT IT</button></div></div></div>
+<div id="spot"></div><div id="tip" class="glass"><p id="tt"></p><div class="row" style="margin:0"><button class="btn" id="tb" style="padding:6px 14px">Back</button><button class="btn p" id="tn" style="padding:6px 14px">Next</button><small id="ts"></small></div></div>
+<div id="toast" class="glass"></div>
+<script>
+const $=i=>document.getElementById(i),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const M=[
+{id:'mars',n:'Walk on Another Planet',t:'3D exploration',lv:'Beginner',d:'Explore Mars or the Moon in first person. Feel how gravity changes how you jump.',learn:['Why gravity differs between worlds','What the ground, sky and horizon look like','How far one step carries you'],ctl:[['W A S D','Walk'],['Mouse / drag','Look around'],['Space','Jump'],['1 · 2 · 3','Moon, Mars, Earth']],
+ demo:{l:'Gravity (m/s²)',a:1.6,b:9.8,s:.1,v:3.7,f:v=>'A jump that reaches 0.5 m on Earth reaches <b>'+(4.9/v).toFixed(2)+' m</b> here',art:v=>cl(4.9/v/3.1,0,1)}},
+{id:'earth',n:'Earth From Space',t:'Globe viewer',lv:'Beginner',d:'Fly from the surface to orbit and watch continents, oceans and storms appear.',learn:['How altitude changes what you can see','Why higher orbits are slower','Where weather forms and moves'],ctl:[['Drag','Rotate Earth'],['Pinch / scroll','Zoom'],['Slider','Change altitude'],['L','Toggle city lights']],
+ demo:{l:'Altitude (km)',a:400,b:36000,s:100,v:400,f:v=>'One orbit takes <b>'+(2*Math.PI*Math.sqrt(Math.pow(6371+v,3)/398600)/60).toFixed(0)+' min</b>. You can see <b>'+Math.sqrt(2*6371*v+v*v).toFixed(0)+' km</b> to the horizon',art:v=>v/36000}},
+{id:'bh',n:'Black Hole Simulator',t:'Physics lab',lv:'Intermediate',d:'Change the mass of a black hole and watch light bend and stars get pulled in.',learn:['What an event horizon is','How mass sets the size of a black hole','Why light curves near strong gravity'],ctl:[['Slider','Black hole mass'],['Drag','Orbit the camera'],['Tap star','Drop it in'],['R','Reset']],
+ demo:{l:'Mass (Suns)',a:1,b:100,s:1,v:10,f:v=>'Event horizon radius: <b>'+(2.95*v).toFixed(0)+' km</b>',art:v=>v/100}},
+{id:'cosmic',n:'Cosmic Event Simulator',t:'Sky simulator',lv:'Beginner',d:'Run solar and lunar eclipses, meteor showers and planetary alignments on a timeline.',learn:['Why eclipses are rare','How the Moon covers the Sun','What a meteor shower really is'],ctl:[['Timeline','Scrub time'],['Event buttons','Pick an event'],['Drag','Look around the sky'],['Space','Play / pause']],
+ demo:{l:'Moon position',a:-100,b:100,s:1,v:60,f:v=>{const d=Math.abs(v)/50,c=d>=2?0:(2*Math.acos(d/2)-(d/2)*Math.sqrt(4-d*d))/Math.PI,p=Math.round(c*100);return '<b>'+p+'%</b> of the Sun is covered'+(p>=99?' (total eclipse)':'')},art:v=>(+v+100)/200}},
+{id:'pilot',n:'Become a Space Pilot',t:'3D flight game',lv:'Advanced',d:'Fly a spaceship through asteroid fields, collect fuel and finish missions.',learn:['Newton\u2019s first law in action','Why braking needs fuel','How to navigate in 3D'],ctl:[['W / S','Thrust / brake'],['Arrows','Steer'],['C','Cockpit or chase view'],['Left stick (phone)','Steer']],
+ demo:{l:'Throttle (%)',a:0,b:100,s:1,v:50,f:v=>'Speed gain in 10 s: <b>'+(v*.24).toFixed(0)+' m/s</b> · fuel used <b>'+(v*.02).toFixed(1)+'%</b>',art:v=>v/100}}];
+const FILE={mars:'mars',earth:'earth',bh:'blackhole',cosmic:'cosmic',pilot:'pilot'};const seen=new Set();let cur=0;
+$('cards').innerHTML=M.map((m,i)=>'<button class="card glass" data-i="'+i+'" id="c'+i+'"><div class="art a-'+m.id+'" id="art'+i+'"></div><div class="tx"><h3>'+m.n+'</h3><p>'+m.d+'</p><span class="tag">'+m.t+'</span><span class="tag">'+m.lv+'</span><span class="tag" id="tg'+i+'"></span></div></button>').join('');
+function setArt(el,m,v){el.style.setProperty('--v',m.demo.art(+v))}
+M.forEach((m,i)=>setArt($('art'+i),m,m.demo.v));
+function open(i){cur=i;const m=M[i],d=m.demo;seen.add(i);$('dr').classList.add('open');
+$('drb').innerHTML='<div class="art a-'+m.id+'" id="dart"></div><h2>'+m.n+'</h2><small>'+m.t+' · '+m.lv+'</small><p>'+m.d+'</p><h4>Try it now</h4><label for="sl"><small>'+d.l+': <span id="sv">'+d.v+'</span></small></label><input type="range" id="sl" min="'+d.a+'" max="'+d.b+'" step="'+d.s+'" value="'+d.v+'"><div class="rd" id="rdo"></div><h4>You will learn</h4><ul>'+m.learn.map(x=>'<li>'+x+'</li>').join('')+'</ul><h4>Controls</h4><div class="ctl" id="ctl">'+m.ctl.map(c=>'<b>'+c[0]+'</b><span>'+c[1]+'</span>').join('')+'</div><div class="row"><button class="btn p" id="launch">LAUNCH MODULE</button></div>';
+const sl=$('sl'),upd=()=>{$('sv').textContent=sl.value;$('rdo').innerHTML=d.f(+sl.value);setArt($('dart'),m,sl.value);setArt($('art'+i),m,sl.value)};sl.oninput=upd;upd();
+$('launch').onclick=()=>{location.href='modules/'+FILE[m.id]+'.html'};prog()}
+function prog(){$('pb').style.width=seen.size*20+'%';$('pt').textContent=seen.size+' / 5'+(seen.size==5?' · Commander!':'');seen.forEach(i=>{$('tg'+i).className='tag ok';$('tg'+i).textContent='Explored'})}
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(e.t);e.t=setTimeout(()=>e.style.display='none',3200)}
+const scr=id=>{['splash','hub'].forEach(x=>$(x).classList.toggle('on',x==id))};
+$('cards').onclick=e=>{const c=e.target.closest('.card');if(c)open(+c.dataset.i)};$('dx').onclick=()=>$('dr').classList.remove('open');
+$('start').onclick=()=>scr('hub');['how1','how2'].forEach(i=>$(i).onclick=()=>$('how').classList.add('on'));$('hx').onclick=()=>$('how').classList.remove('on');
+const TS=[{s:'#logo',t:'Welcome to the hub. From here you reach every space experience.'},{s:'#pt',t:'This bar is your Explorer rank. It fills as you explore modules.',p:'prog'},{s:'#c0',t:'Each card is a mission. Click or tap one to preview it.'},{s:'#sl',t:'Drag this slider. The picture and the numbers change live: this is how you learn the science.',o:0},{s:'#ctl',t:'Controls for keyboard and touch are listed here.',o:0},{s:'#launch',t:'Press Launch to open the full experience in a new page. Use Back to Hub to return.',o:0},{s:'#how2',t:'Open How to play any time with this button. Happy exploring!',c:1}];
+let ti=0;
+function tour(){scr('hub');$('how').classList.remove('on');ti=0;step()}
+function step(){const s=TS[ti];if(s.o!=null)open(s.o);else $('dr').classList.remove('open');setTimeout(()=>{const el=document.querySelector(s.s),r=(s.p?$(s.p):el).getBoundingClientRect(),sp=$('spot'),tp=$('tip');sp.style.display=tp.style.display='block';
+sp.style.cssText+=';display:block;left:'+(r.left-6)+'px;top:'+(r.top-6)+'px;width:'+(r.width+12)+'px;height:'+(r.height+12)+'px';$('tt').textContent=s.t;$('ts').textContent=(ti+1)+' / '+TS.length;$('tn').textContent=ti==TS.length-1?'Finish':'Next';
+const th=tp.offsetHeight,y=r.bottom+th+20<innerHeight?r.bottom+14:Math.max(10,r.top-th-14);tp.style.top=y+'px';tp.style.left=cl(r.left,10,innerWidth-320)+'px'},s.o!=null?420:30)}
+function endTour(){$('spot').style.display=$('tip').style.display='none';$('dr').classList.remove('open')}
+$('tn').onclick=()=>{if(ti>=TS.length-1)return endTour();ti++;step()};$('tb').onclick=()=>{if(ti>0){ti--;step()}};
+['tour1','tour2'].forEach(i=>$(i).onclick=tour);addEventListener('keydown',e=>{if(e.key=='Escape'){endTour();$('how').classList.remove('on')}});
+const cv=$('bg'),x=cv.getContext('2d'),ST=Array.from({length:240},(_,i)=>({x:Math.random(),y:Math.random(),z:.2+Math.random()*.8,p:Math.random()*6}));
+function bg(t){const d=devicePixelRatio||1,w=innerWidth,h=innerHeight;if(cv.width!=w*d){cv.width=w*d;cv.height=h*d}x.setTransform(d,0,0,d,0,0);x.fillStyle='#050914';x.fillRect(0,0,w,h);
+const n=x.createRadialGradient(w*.2,h*.2,0,w*.2,h*.2,w*.6);n.addColorStop(0,'rgba(90,60,200,.22)');n.addColorStop(1,'rgba(90,60,200,0)');x.fillStyle=n;x.fillRect(0,0,w,h);
+ST.forEach(s=>{const px=((s.x*w-t*.004*s.z*10)%w+w)%w;x.fillStyle='rgba(220,235,255,'+(.3+.5*s.z*(.6+.4*Math.sin(t/600+s.p)))+')';x.fillRect(px,s.y*h,s.z*1.8,s.z*1.8)});
+const r=Math.min(w,h)*(w<700?.3:.42),cx=w*(w<700?.72:.8),cy=h*(w<700?.82:.66),g=x.createRadialGradient(cx-r*.4,cy-r*.4,r*.1,cx,cy,r);g.addColorStop(0,'#8fd0ff');g.addColorStop(.35,'#2a72c8');g.addColorStop(.75,'#0b2c62');g.addColorStop(1,'#030a1c');
+x.save();x.beginPath();x.arc(cx,cy,r,0,7);x.clip();x.fillStyle=g;x.fillRect(cx-r,cy-r,2*r,2*r);x.fillStyle='rgba(60,150,80,.55)';[[-.3,-.2,.3,.14],[.15,.25,.25,.12],[-.1,.35,.15,.07]].forEach(a=>{x.beginPath();x.ellipse(cx+((a[0]*r+t*.01)%(2*r)+2*r)%(2*r)-r,cy+a[1]*r,a[2]*r,a[3]*r,.3,0,7);x.fill()});
+x.fillStyle='rgba(255,255,255,.1)';for(let i=0;i<8;i++){x.beginPath();x.ellipse(cx+((i*97+t*.02)%(2.4*r))-1.2*r,cy+(i%4-1.5)*r*.4,r*.35,r*.03,0,0,7);x.fill()}
+const sh=x.createLinearGradient(cx-r,cy,cx+r,cy);sh.addColorStop(0,'rgba(0,0,10,0)');sh.addColorStop(.55,'rgba(0,0,10,.05)');sh.addColorStop(1,'rgba(0,0,10,.82)');x.fillStyle=sh;x.fillRect(cx-r,cy-r,2*r,2*r);x.restore();
+const a=x.createRadialGradient(cx,cy,r*.97,cx,cy,r*1.12);a.addColorStop(0,'rgba(100,180,255,.5)');a.addColorStop(1,'rgba(100,180,255,0)');x.fillStyle=a;x.beginPath();x.arc(cx,cy,r*1.12,0,7);x.fill();requestAnimationFrame(bg)}
+requestAnimationFrame(bg);prog();
+</script></body></html>

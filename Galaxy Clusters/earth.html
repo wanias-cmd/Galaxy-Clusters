@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Earth From Space</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap"><link rel="stylesheet" href="../assets/common.css"></head><body>
+<canvas class="main" id="c"></canvas><a class="back" href="../index.html">← Hub</a>
+<div class="panel" style="right:12px;top:12px"><h3>Earth From Space</h3>
+<label for="s"><small>Altitude: </small><span class="rd" id="al"></span></label><input type="range" id="s" min="0" max="100" step=".1" value="6">
+<div class="chips" id="q"></div>
+<h4>Live physics</h4><p>Orbit type: <span class="rd" id="ot"></span><br>One orbit takes: <span class="rd" id="pe"></span><br>Speed: <span class="rd" id="sp"></span><br>Distance to horizon: <span class="rd" id="hz"></span><br>Share of Earth you can see: <span class="rd" id="vs"></span></p>
+<div class="tip" id="fa"></div><h4>Layers</h4><div class="chips"><button class="chip on" id="tc">Clouds</button><button class="chip on" id="tl">City lights</button></div></div>
+<div class="ov" id="ov"><div><h2>Earth From Space</h2><ul><li><b>Drag</b> the globe to rotate it.</li><li>Move the <b>Altitude slider</b> (or scroll) to climb from 200 km to 36,000 km.</li><li>Tap <b>ISS, Hubble, GPS, Geostationary</b> to jump to real satellites.</li><li>Watch the numbers: higher means slower, a longer orbit and a wider view.</li></ul><button class="btn" id="go">START</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=i=>document.getElementById(i),R=6371,MU=398600,TAU=Math.PI*2;
+const ren=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio||1,2));
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(50,1,.001,400);
+const B='https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/',L=new THREE.TextureLoader(),T=n=>L.load(B+n);
+const grp=new THREE.Group();sc.add(grp);
+const em=new THREE.MeshPhongMaterial({color:0xffffff,map:L.load(B+'earth_atmos_2048.jpg',undefined,undefined,()=>em.color.set(0x2a5aa0)),specularMap:T('earth_specular_2048.jpg'),specular:new THREE.Color(0x444444),shininess:18,normalMap:T('earth_normal_2048.jpg'),emissive:new THREE.Color(0xffd080),emissiveMap:T('earth_lights_2048.png'),emissiveIntensity:.9});
+grp.add(new THREE.Mesh(new THREE.SphereGeometry(1,128,96),em));
+const cloud=new THREE.Mesh(new THREE.SphereGeometry(1.006,96,64),new THREE.MeshPhongMaterial({map:T('earth_clouds_1024.png'),transparent:true,opacity:.85,depthWrite:false}));grp.add(cloud);
+sc.add(new THREE.Mesh(new THREE.SphereGeometry(1.035,64,48),new THREE.MeshBasicMaterial({color:0x5aa8ff,transparent:true,opacity:.14,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false})));
+const sun=new THREE.DirectionalLight(0xffffff,1.5);sun.position.set(5,1.5,4);sc.add(sun,new THREE.AmbientLight(0x223355,.5));
+const sp=[];for(let i=0;i<3000;i++){const a=Math.random()*TAU,b=Math.acos(2*Math.random()-1);sp.push(250*Math.sin(b)*Math.cos(a),250*Math.sin(b)*Math.sin(a),250*Math.cos(b))}
+const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));sc.add(new THREE.Points(sg,new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,color:0xffffff})));
+function rs(){ren.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
+const SATS=[['ISS',420,'The International Space Station circles Earth every ~92 minutes, so astronauts see 16 sunrises a day.'],['Hubble',540,'Hubble sits above the blurry atmosphere, so its pictures are sharp. Still low Earth orbit.'],['GPS',20200,'GPS satellites orbit twice a day. You need signals from 4 of them to find your position.'],['Geostationary',35786,'At this height one orbit takes 24 hours, the same as Earth\u2019s spin, so the satellite hovers over one spot. Weather and TV satellites live here.']];
+const alt=s=>200*Math.pow(180,s/100),sl=a=>100*Math.log(a/200)/Math.log(180);
+$('q').innerHTML=SATS.map((s,i)=>'<button class="chip" data-i="'+i+'">'+s[0]+'</button>').join('');
+$('q').onclick=e=>{const i=e.target.dataset.i;if(i!=null){$('s').value=sl(SATS[i][1]);upd(SATS[i][2])}};
+$('s').oninput=()=>upd();addEventListener('wheel',e=>{$('s').value=Math.min(100,Math.max(0,+$('s').value+Math.sign(e.deltaY)*2));upd()},{passive:true});
+$('tc').onclick=e=>{cloud.visible=!cloud.visible;e.target.classList.toggle('on')};$('tl').onclick=e=>{em.emissiveIntensity=em.emissiveIntensity?0:.9;e.target.classList.toggle('on')};
+$('go').onclick=()=>$('ov').classList.add('off');
+function fmt(m){return m<180?m.toFixed(0)+' minutes':(m/60).toFixed(1)+' hours'}
+function upd(f){const h=alt(+$('s').value),a=R+h,T=TAU*Math.sqrt(a*a*a/MU)/60;cam.position.set(0,0,a/R);cam.lookAt(0,0,0);
+$('al').textContent=Math.round(h).toLocaleString()+' km';$('pe').textContent=fmt(T);$('sp').textContent=Math.sqrt(MU/a).toFixed(2)+' km/s ('+Math.round(Math.sqrt(MU/a)*3600).toLocaleString()+' km/h)';
+$('hz').textContent=Math.round(Math.sqrt(a*a-R*R)).toLocaleString()+' km';$('vs').textContent=((1-R/a)/2*100).toFixed(1)+'%';
+$('ot').textContent=h<2000?'Low Earth Orbit':h<35000?'Medium Earth Orbit':'Geostationary';
+$('fa').textContent=f||(h<2000?'Low orbit: sharp detail, fast trips, but you only see a small patch of Earth.':h<35000?'Medium orbit: slower and higher, so each satellite sees much more of Earth.':'Very high: you see almost half the planet, but details look tiny.')}
+let dr=0,lx=0,ly=0;const cv=$('c');cv.onpointerdown=e=>{dr=1;lx=e.clientX;ly=e.clientY};addEventListener('pointerup',()=>dr=0);
+addEventListener('pointermove',e=>{if(!dr)return;grp.rotation.y+=(e.clientX-lx)*.005;grp.rotation.x=Math.max(-1.4,Math.min(1.4,grp.rotation.x+(e.clientY-ly)*.005));lx=e.clientX;ly=e.clientY});
+upd();(function f(){requestAnimationFrame(f);if(!dr)grp.rotation.y+=.0006;cloud.rotation.y+=.0002;ren.render(sc,cam)})();
+</script></body></html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Black Hole Simulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap"><link rel="stylesheet" href="../assets/common.css"></head><body>
+<canvas class="main" id="c"></canvas><a class="back" href="../index.html">← Hub</a>
+<div class="panel" style="right:12px;top:12px"><h3>Black Hole Simulator</h3>
+<label for="m"><small>Mass: </small><span class="rd" id="ms"></span></label><input type="range" id="m" min="0" max="6.63" step=".01" value="1">
+<div class="chips"><button class="chip" data-m="1">Stellar (10 Suns)</button><button class="chip" data-m="1.32">Cygnus X-1</button><button class="chip" data-m="6.63">Sagittarius A*</button></div>
+<p>Event horizon radius: <span class="rd" id="rk"></span><br><span class="mu" id="cp"></span></p>
+<h4>Experiments</h4><div class="chips"><button class="chip on" id="a1">Orbit probe</button><button class="chip" id="a2">Plunge probe</button><button class="chip" id="a3">Fire light beams</button><button class="chip on" id="a4">Show zones</button><button class="chip" id="a5">Clear</button></div>
+<p class="mu">Click or tap space to drop a probe there.</p><p>Clock on nearest probe: <span class="rd" id="td">-</span></p><div class="tip" id="lg">Drop a probe near the hole and watch what happens.</div></div>
+<div class="ov" id="ov"><div><h2>Black Hole Simulator</h2><ul><li>Drag the <b>Mass slider</b>. A heavier black hole has a bigger event horizon and bends light more.</li><li><b>Click space</b> to drop a probe. Far away it orbits. Inside the <b>last stable orbit (3×)</b> it spirals in.</li><li>Press <b>Fire light beams</b> to see light curve. Beams that pass too close are trapped.</li><li>Background stars show the <b>Einstein ring</b>: gravity acts like a lens.</li></ul><button class="btn" id="go">START</button></div></div>
+<script>
+const $=i=>document.getElementById(i),TAU=Math.PI*2,CC=260,cv=$('c'),x=cv.getContext('2d');let W,H,d,lg=1,P=[],mode='orbit',zones=1,lastT=performance.now();
+function rs(){d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d}addEventListener('resize',rs);rs();
+const BG=Array.from({length:700},()=>({x:(Math.random()-.5)*2.6,y:(Math.random()-.5)*2.6,s:Math.random()*1.5+.4,c:Math.random()}));
+const M=()=>Math.pow(10,lg),RS=()=>12+18*lg,GM=()=>RS()*CC*CC/2;
+function say(t){$('lg').textContent=t}
+function fm(m){return m>=1e6?(m/1e6).toFixed(1)+' million Suns':(m<10?m.toFixed(1):Math.round(m))+' Suns'}
+function info(){const m=M(),km=2.95*m;$('ms').textContent=fm(m);$('rk').textContent=(km>=1e6?(km/1e6).toFixed(1)+' million km':Math.round(km).toLocaleString()+' km');
+$('cp').textContent=km<10?'About the size of a small town.':km<100?'About the size of a large city.':km<2000?'About the size of a large country.':km<1e5?'About the size of a planet.':'Wider than '+Math.round(km*2/1.39e6)+' Suns side by side.'}
+function spawn(px,py,kind){const cx=W/2,cy=H/2,dx=px-cx,dy=py-cy,r=Math.hypot(dx,dy),rs=RS();if(r<=rs){say('You clicked inside the event horizon. Nothing there can ever come back out.');return}
+const vc=Math.sqrt(GM()*r)/(r-rs),f=kind=='orbit'?1:.25;P.push({x:dx,y:dy,vx:-dy/r*vc*f,vy:dx/r*vc*f,ph:0,t:[]});
+say(r<3*rs?'Inside the last stable orbit (3× the horizon). Orbits are impossible here, so the probe spirals in.':kind=='orbit'?'A stable orbit: gravity and sideways speed balance. Farther orbits are slower.':'With little sideways speed the probe falls almost straight in.')}
+function beams(){const rs=RS();for(let i=-5;i<=5;i++)P.push({x:-W/2,y:i*rs*1.05,vx:CC,vy:0,ph:1,t:[]});say('Light always moves at the same speed but its path bends. Beams closer than about 2.6 horizon radii are trapped.')}
+function step(dt){const rs=RS(),g=GM();P=P.filter(p=>{for(let k=0;k<4;k++){const s=dt/4,r=Math.hypot(p.x,p.y);if(r<rs+1){say(p.ph?'A light beam crossed the event horizon. Even light cannot escape.':'Probe crossed the event horizon. Nothing, not even light, can return.');return false}
+const a=g/Math.pow(Math.max(r-rs,2),2)*(p.ph?2:1);p.vx-=a*p.x/r*s;p.vy-=a*p.y/r*s;if(p.ph){const v=Math.hypot(p.vx,p.vy);p.vx*=CC/v;p.vy*=CC/v}p.x+=p.vx*s;p.y+=p.vy*s}
+p.t.push([p.x,p.y]);if(p.t.length>140)p.t.shift();return Math.abs(p.x)<W&&Math.abs(p.y)<H})}
+function draw(){const cx=W/2,cy=H/2,rs=RS(),sc=Math.max(W,H)/2.2,tE=rs*1.7;x.setTransform(d,0,0,d,0,0);x.fillStyle='#02030a';x.fillRect(0,0,W,H);
+BG.forEach(s=>{const bx=s.x*sc,by=s.y*sc,r=Math.hypot(bx,by);if(r<1)return;const q=Math.sqrt(r*r+4*tE*tE),r1=(r+q)/2,r2=(r-q)/2,ux=bx/r,uy=by/r,col='rgba('+(190+s.c*65|0)+','+(200+s.c*40|0)+',255,';
+x.fillStyle=col+'.9)';x.beginPath();x.arc(cx+ux*r1,cy+uy*r1,s.s*Math.min(2.5,r1/r),0,TAU);x.fill();if(Math.abs(r2)>rs){x.fillStyle=col+'.4)';x.beginPath();x.arc(cx+ux*r2,cy+uy*r2,s.s*.7,0,TAU);x.fill()}});
+const disk=()=>{const g=x.createRadialGradient(0,0,3*rs,0,0,6.5*rs);g.addColorStop(0,'rgba(255,240,210,.95)');g.addColorStop(.3,'rgba(255,170,70,.9)');g.addColorStop(.7,'rgba(255,80,20,.45)');g.addColorStop(1,'rgba(255,60,10,0)');x.fillStyle=g;x.beginPath();x.arc(0,0,6.5*rs,0,TAU);x.arc(0,0,3*rs,0,TAU,true);x.fill('evenodd')};
+x.save();x.translate(cx,cy);x.rotate(-.18);x.save();x.scale(1,.26);disk();x.restore();
+x.fillStyle='#000';x.shadowColor='rgba(255,170,80,.7)';x.shadowBlur=rs*.9;x.beginPath();x.arc(0,0,rs,0,TAU);x.fill();x.shadowBlur=0;
+x.save();x.beginPath();x.rect(-8*rs,0,16*rs,8*rs);x.clip();x.scale(1,.26);disk();x.restore();
+const ag=x.createLinearGradient(-3*rs,0,3*rs,0);ag.addColorStop(0,'rgba(255,200,120,.2)');ag.addColorStop(.5,'rgba(255,230,180,.85)');ag.addColorStop(1,'rgba(255,200,120,.2)');x.strokeStyle=ag;x.lineWidth=rs*.22;x.beginPath();x.ellipse(0,0,2.7*rs,2.4*rs,0,Math.PI,TAU);x.stroke();x.restore();
+if(zones){x.font='11px Chakra Petch';x.lineWidth=1;x.setLineDash([4,5]);[[1,'Event horizon'],[1.5,'Photon sphere'],[3,'Last stable orbit']].forEach(z=>{x.strokeStyle='rgba(79,216,255,.55)';x.beginPath();x.arc(cx,cy,rs*z[0],0,TAU);x.stroke();x.fillStyle='#8fd8ff';x.fillText(z[1],cx+rs*z[0]*.72+4,cy-rs*z[0]*.72)});x.setLineDash([])}
+P.forEach(p=>{x.strokeStyle=p.ph?'rgba(255,240,120,.9)':'rgba(120,230,255,.8)';x.lineWidth=1.6;x.beginPath();p.t.forEach((q,i)=>i?x.lineTo(cx+q[0],cy+q[1]):x.moveTo(cx+q[0],cy+q[1]));x.stroke();if(!p.ph){x.fillStyle='#fff';x.beginPath();x.arc(cx+p.x,cy+p.y,3,0,TAU);x.fill()}});
+const n=P.filter(p=>!p.ph).map(p=>Math.hypot(p.x,p.y)).sort((a,b)=>a-b)[0];$('td').textContent=n?'runs '+((1-Math.sqrt(Math.max(0,1-rs/n)))*100).toFixed(0)+'% slower':'-'}
+function loop(t){requestAnimationFrame(loop);const dt=Math.min(.03,(t-lastT)/1e3);lastT=t;step(dt);draw()}
+const ms=$('m');ms.oninput=()=>{lg=+ms.value;info()};document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{lg=ms.value=+b.dataset.m;info()});
+const tg=(id,f)=>$(id).onclick=()=>f();const sm=m=>{mode=m;$('a1').classList.toggle('on',m=='orbit');$('a2').classList.toggle('on',m=='plunge')};
+tg('a1',()=>sm('orbit'));tg('a2',()=>sm('plunge'));tg('a3',beams);tg('a4',()=>{zones=1-zones;$('a4').classList.toggle('on',!!zones)});tg('a5',()=>{P=[];say('Cleared.')});
+cv.onpointerdown=e=>spawn(e.clientX,e.clientY,mode);$('go').onclick=()=>$('ov').classList.add('off');info();requestAnimationFrame(loop);
+</script></body></html>
