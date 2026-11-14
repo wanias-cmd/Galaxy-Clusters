@@ -75,13 +75,6 @@ build_odyssey.py        merges src/ into one odyssey.html
 deploy/index.html       built game (what gets deployed)
 ```
 
-## Deploy to Vercel
-
-1. Run `python build_odyssey.py`, then copy `odyssey.html` into a `deploy/` folder and rename it `index.html`.
-2. Push the repo to GitHub.
-3. On vercel.com choose **Add New → Project**, import the repo, set **Root Directory** to `deploy`, framework preset **Other**, leave build command empty, and click **Deploy**.
-
-Or from a terminal: `cd deploy && npx vercel --prod`.
 
 ## Tech stack
 
@@ -91,16 +84,6 @@ Or from a terminal: `cd deploy && npx vercel --prod`.
 - PeerJS for online rooms
 - Python 3 build script
 
-## Limitations
-
-- The advisor is rule-based, not a language model.
-- Online rooms depend on a free public WebRTC broker.
-- Distances, times and costs are scaled for gameplay and are simplified, not mission-accurate.
-- Best on a laptop or a phone held sideways. The Builder's panels are tight on small screens.
-
-## AI assistance disclosure
-
-This project was designed and built with the help of an AI assistant (Claude by Anthropic). The prompts used are listed in [`PROMPTS.md`](PROMPTS.md).
 
 ## Credits
 
@@ -108,6 +91,5 @@ This project was designed and built with the help of an AI assistant (Claude by 
 - Font: Chakra Petch (Google Fonts, OFL).
 - three.js and PeerJS are open-source libraries.
 
-## Licence
 
-_Add your licence (for example MIT)._
+
