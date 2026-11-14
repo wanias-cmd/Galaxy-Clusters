@@ -7,7 +7,8 @@ rd = lambda p: (root / p).read_text(encoding='utf-8')
 fix = lambda s: '<' + s.lstrip() if s.lstrip().startswith('!DOCTYPE') else s
 
 ORDER = ['mars', 'earth', 'blackhole', 'cosmic', 'builder', 'landing', 'pilot']
-css = rd('common.css')
+css_path = 'assets/common.css' if (root / 'assets/common.css').exists() else 'common.css'
+css = rd(css_path)
 
 SHIM = """<script>
 document.addEventListener('click',function(e){var a=e.target.closest('a[href="#hub"]');if(a){e.preventDefault();parent.postMessage({odyssey:'hub'},'*')}},true);
@@ -16,8 +17,7 @@ b.style.cssText='position:fixed;left:12px;bottom:12px;z-index:25;padding:8px 14p
 b.onclick=function(){parent.postMessage({odyssey:'next'},'*')};document.body.appendChild(b)});
 </script>"""
 
-# Earth textures: downloaded once into textures/, then embedded as data URIs
-TEXDIR = root / 'textures'
+TEXDIR = (root / 'assets' / 'textures') if (root / 'assets').exists() else (root / 'textures')
 TEXDIR.mkdir(parents=True, exist_ok=True)
 BASE = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/'
 TEX = {}
@@ -33,9 +33,35 @@ for n in ['earth_atmos_2048.jpg', 'earth_specular_2048.jpg', 'earth_normal_2048.
 
 mods = {}
 for k in ORDER:
-    h = fix(rd(f'{k}.html'))
+    mod_path = f'modules/{k}.html' if (root / f'modules/{k}.html').exists() else f'{k}.html'
+    h = fix(rd(mod_path))
     h = re.sub(r'<link[^>]+href=["\'](?:\.\./assets/|\.\./)?common\.css["\'][^>]*>', '<style>' + css + '</style>', h)
     h = h.replace('../index.html', '#hub').replace('index.html', '#hub')
+    if k == 'mars':
+        ASTRO = r"""
+let view=1,ph=0,hd=0;
+const AS=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.7:r,metalness:m||0}),SU=MT(0xeef0f4,.75),GR=MT(0x5a6070,.6,.3),DK=MT(0x2b2f3a,.8);
+const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},cy=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,16);
+add(cy(.3,.26,.6),SU,0,1.18,0);add(cy(.275,.275,.07),GR,0,.86,0);add(cy(.13,.17,.08),GR,0,1.52,0);
+add(new THREE.BoxGeometry(.3,.2,.06),GR,0,1.25,-.28);[-.08,0,.08].forEach((x,i)=>add(new THREE.BoxGeometry(.05,.04,.02),MT([0xff5d6c,0x5cf0b0,0x4fd8ff][i]),x,1.27,-.315));
+add(new THREE.BoxGeometry(.46,.58,.2),MT(0xd9dce4,.7),0,1.2,.29);[-.12,.12].forEach(x=>add(cy(.07,.07,.2),GR,x,1.58,.29));
+add(new THREE.SphereGeometry(.285,28,20),SU,0,1.8,0);
+const vis=add(new THREE.SphereGeometry(.296,28,20,Math.PI*1.2,Math.PI*.6,Math.PI*.3,Math.PI*.38),new THREE.MeshPhongMaterial({color:0xe2b04a,specular:0xffffff,shininess:140}),0,1.8,0);vis.material.side=THREE.DoubleSide;
+const arm=s=>{const g=new THREE.Group();g.position.set(s*.4,1.4,0);add(cy(.085,.075,.5),SU,0,-.25,0,g);add(new THREE.SphereGeometry(.1,14,10),DK,0,-.54,0,g);add(new THREE.SphereGeometry(.1,12,8),GR,0,0,0,g);AS.add(g);return g};
+const leg=s=>{const g=new THREE.Group();g.position.set(s*.14,.86,0);add(cy(.11,.1,.78),SU,0,-.39,0,g);add(new THREE.BoxGeometry(.2,.14,.34),DK,0,-.76,-.05,g);AS.add(g);return g};
+const aL=arm(-1),aR=arm(1),lL=leg(-1),lR=leg(1);add(new THREE.BoxGeometry(.03,.11,.17),MT(0x2a64d8),-.09,-.12,0,aL);sc.add(AS);
+function astro(dx,dz,dt){const mv=Math.hypot(dx,dz)/Math.max(dt,.001);AS.visible=!!view;if(!view)return;if(mv>.1)hd=Math.atan2(-dx,-dz);AS.rotation.y+=Math.atan2(Math.sin(hd-AS.rotation.y),Math.cos(hd-AS.rotation.y))*Math.min(1,dt*10);
+AS.position.set(px,Hh(px,pz)+hy,pz);ph+=mv*dt*(1.4+wd.g*.12);const air=hy>.02,sw=air?0:Math.sin(ph)*Math.min(1,mv/3)*(.9-.04*wd.g);
+lL.rotation.x=air?-.45:sw;lR.rotation.x=air?.45:-sw;aL.rotation.x=air?-.8:-sw*.8;aR.rotation.x=air?-.8:sw*.8}
+function tv(){view=1-view;document.getElementById('vw').textContent=view?'View: astronaut (V)':'View: first person (V)'}
+document.getElementById('vw').onclick=tv;addEventListener('keydown',e=>{if(e.code=='KeyV')tv()});
+build('mars');requestAnimationFrame(loop);"""
+        CAM = "if(view){const cx=px+Math.sin(yaw)*5.5,cz=pz+Math.cos(yaw)*5.5;cam.position.set(cx,Math.max(Hh(cx,cz)+1.2,Hh(px,pz)+2.8+hy),cz);cam.rotation.set(pitch-.18,yaw,0)}else{cam.position.set(px,Hh(px,pz)+1.7+hy,pz);cam.rotation.set(pitch,yaw,0)}astro(dx,dz,dt);"
+        VIEWBTN = '<div class="panel" style="left:12px;bottom:12px;top:auto;width:auto;max-width:250px"><button class="chip on" id="vw">View: astronaut (V)</button><p class="mu" style="margin:6px 0 0;font-size:12px">Jump on each world and watch how gravity changes your hop and your stride.</p></div><div class="ov" id="ov">'
+        for a, b in [("build('mars');requestAnimationFrame(loop);", ASTRO), ('cam.position.set(px,Hh(px,pz)+1.7+hy,pz);cam.rotation.set(pitch,yaw,0);', CAM), ('<div class="ov" id="ov">', VIEWBTN)]:
+            if a not in h:
+                sys.exit('Mars module: could not find ' + a)
+            h = h.replace(a, b, 1)
     if k == 'pilot':
         exitbtn = '<a class="btn" href="#hub" style="position:fixed;left:12px;top:118px;z-index:40;padding:6px 14px;font-size:13px;text-decoration:none;color:inherit;background:rgba(5,10,22,.8)">EXIT</a><div id="rot">'
         fuelmsg = "st.fuel=Math.max(0,st.fuel);if(st.fuel<=0&&msgT<=0)msg('OUT OF FUEL - press EXIT to leave','#ff5d6c');"
@@ -79,7 +105,15 @@ hub = re.sub(r'\.a-pil(?![a-z])', '.a-pilot', hub)
 
 NEWCSS = ".a-builder{background:linear-gradient(#050914,#101a3a)}.a-builder::before{content:'';position:absolute;left:50%;top:50%;width:calc(110px + var(--v)*70px);height:30px;margin:-15px 0 0 calc((110px + var(--v)*70px)/-2);background:repeating-linear-gradient(90deg,#2a64d8 0 18px,#8fb4ff 18px 20px);transition:.25s}.a-builder::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:58px;margin:-29px;border-radius:4px;background:#d5dcec;box-shadow:0 -14px 0 -10px #ffb454}.a-landing{background:linear-gradient(#000,#1b1b22 72%,#6d6d78 73%)}.a-landing::before{content:'';position:absolute;left:50%;bottom:calc(30px + var(--v)*60px);width:22px;height:30px;margin-left:-11px;background:#e8ecf6;clip-path:polygon(50% 0,100% 100%,0 100%);transition:bottom .25s}.a-landing::after{content:'';position:absolute;left:calc(50% - 22px);bottom:26px;width:44px;height:5px;background:#d8dbe4}</style>"
 NEWM = "M.push({id:'builder',n:'Spacecraft Builder',t:'Team engineering',lv:'Intermediate',d:'Design a spacecraft with solar panels, batteries, antennas and instruments. Work as a team of up to 4 engineers.',learn:['How mass, power and cost trade off','Why every part needs power and cooling','How teams decide together'],ctl:[['+ / −','Add or remove parts'],['Role chips','Pick your engineer role'],['Launch vote','Team decides to launch']],demo:{l:'Solar panels',a:0,b:10,s:1,v:2,f:v=>'Panels make <b>'+v*60+' W</b>. A basic spacecraft needs about 110 W.',art:v=>v/10}},{id:'landing',n:'Rocket Landing',t:'2D flight game',lv:'Intermediate',d:'Land a rocket safely on the Moon, Mars or Earth. Learn why timing the braking burn matters.',learn:['Why landing speed matters (kinetic energy)','How gravity and air change a landing','What stopping distance means'],ctl:[['W / Space','Fire engine'],['A D / arrows','Tilt ship'],['1 · 2 · 3','Moon, Mars, Earth']],demo:{l:'Touchdown speed (m/s)',a:0,b:30,s:1,v:5,f:v=>'A 1-tonne lander carries <b>'+(0.5*v*v).toFixed(0)+' kJ</b> on impact '+(v<5?'(safe landing)':'(crash)'),art:v=>1-v/30}});const FILE={builder:'builder',landing:'landing',"
-for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", "seen.size*100/M.length+'%'"), ("' / 5'+(seen.size==5", "' / '+M.length+(seen.size==M.length"), ('Explore all 5', 'Explore all 7')]:
+for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", "seen.size*100/M.length+'%'"), ("' / 5'+(seen.size==5", "' / '+M.length+(seen.size==M.length"), ('Explore all 5', 'Explore all 7'),
+ ('<button class="btn" id="tb" style="padding:6px 14px">Back</button>', '<button class="btn" id="tx" style="padding:6px 14px">Exit tour</button><button class="btn" id="tb" style="padding:6px 14px">Back</button>'),
+ ('<button class="btn" id="tour2">Guided tour</button></div></div>', '<button class="btn" id="tour2">Guided tour</button><button class="btn" id="home">Main menu</button></div></div>'),
+ ("$('start').onclick=()=>scr('hub');", "$('start').onclick=()=>scr('hub');$('home').onclick=()=>{touring=0;endTour();scr('splash')};"),
+ ('let ti=0;', "let ti=0,touring=0,tourFrom='splash';function exitTour(){if(!touring)return;touring=0;endTour();scr(tourFrom)}"),
+ ("function tour(){scr('hub');", "function tour(){tourFrom=$('hub').classList.contains('on')?'hub':'splash';touring=1;scr('hub');"),
+ ("$('tb').onclick=()=>{if(ti>0){ti--;step()}};", "$('tb').onclick=()=>{if(ti>0){ti--;step()}else exitTour()};$('tx').onclick=exitTour;"),
+ ('return endTour();ti++', 'return exitTour();ti++'),
+ ("if(e.key=='Escape'){endTour();", "if(e.key=='Escape'){touring?exitTour():endTour();")]:
     if a not in hub:
         sys.exit('Hub: could not find ' + a)
     hub = hub.replace(a, b, 1)
