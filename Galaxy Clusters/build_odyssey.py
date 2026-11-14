@@ -1,14 +1,13 @@
 ﻿#!/usr/bin/env python3
-"""Merge the Odyssey hub + 5 modules + common.css + Earth textures into ONE file: odyssey.html"""
+"""Merge the Odyssey hub + 7 modules + common.css + Earth textures into ONE file: odyssey.html"""
 import base64, json, pathlib, re, sys, urllib.request
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 rd = lambda p: (root / p).read_text(encoding='utf-8')
 fix = lambda s: '<' + s.lstrip() if s.lstrip().startswith('!DOCTYPE') else s
 
-ORDER = ['mars', 'earth', 'blackhole', 'cosmic', 'pilot']
-css_path = 'assets/common.css' if (root / 'assets/common.css').exists() else 'common.css'
-css = rd(css_path)
+ORDER = ['mars', 'earth', 'blackhole', 'cosmic', 'builder', 'landing', 'pilot']
+css = rd('common.css')
 
 SHIM = """<script>
 document.addEventListener('click',function(e){var a=e.target.closest('a[href="#hub"]');if(a){e.preventDefault();parent.postMessage({odyssey:'hub'},'*')}},true);
@@ -17,7 +16,8 @@ b.style.cssText='position:fixed;left:12px;bottom:12px;z-index:25;padding:8px 14p
 b.onclick=function(){parent.postMessage({odyssey:'next'},'*')};document.body.appendChild(b)});
 </script>"""
 
-TEXDIR = (root / 'assets' / 'textures') if (root / 'assets').exists() else (root / 'textures')
+# Earth textures: downloaded once into textures/, then embedded as data URIs
+TEXDIR = root / 'textures'
 TEXDIR.mkdir(parents=True, exist_ok=True)
 BASE = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/'
 TEX = {}
@@ -33,10 +33,16 @@ for n in ['earth_atmos_2048.jpg', 'earth_specular_2048.jpg', 'earth_normal_2048.
 
 mods = {}
 for k in ORDER:
-    mod_path = f'modules/{k}.html' if (root / f'modules/{k}.html').exists() else f'{k}.html'
-    h = fix(rd(mod_path))
+    h = fix(rd(f'{k}.html'))
     h = re.sub(r'<link[^>]+href=["\'](?:\.\./assets/|\.\./)?common\.css["\'][^>]*>', '<style>' + css + '</style>', h)
     h = h.replace('../index.html', '#hub').replace('index.html', '#hub')
+    if k == 'pilot':
+        exitbtn = '<a class="btn" href="#hub" style="position:fixed;left:12px;top:118px;z-index:40;padding:6px 14px;font-size:13px;text-decoration:none;color:inherit;background:rgba(5,10,22,.8)">EXIT</a><div id="rot">'
+        fuelmsg = "st.fuel=Math.max(0,st.fuel);if(st.fuel<=0&&msgT<=0)msg('OUT OF FUEL - press EXIT to leave','#ff5d6c');"
+        for a, b in [('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg)]:
+            if a not in h:
+                sys.exit('Pilot module: could not find ' + a)
+            h = h.replace(a, b, 1)
     if k == 'earth':
         h, n1 = re.subn(r"const B='[^']*',", 'const TEX=' + json.dumps(TEX) + ',', h)
         h = re.sub(r"B\+'([^']+)'", r"TEX['\1']", h).replace('L.load(B+n)', 'L.load(TEX[n])')
@@ -61,10 +67,6 @@ LOADER = LOADER.replace('__MODS__', json.dumps(mods).replace('</', '<\\/')).repl
 hub = fix(rd('index.html'))
 hub = re.sub(r'<link[^>]+href=["\'](?:assets/)?common\.css["\'][^>]*>', '<style>' + css + '</style>', hub)
 
-# Hub card art fix
-hub = re.sub(r'\.a-ecl(?![a-z])', '.a-cosmic', hub)
-hub = re.sub(r'\.a-pil(?![a-z])', '.a-pilot', hub)
-
 if "location.href='modules/'+FILE[m.id]+'.html'" in hub:
     hub = hub.replace("location.href='modules/'+FILE[m.id]+'.html'", 'window.launchMod(FILE[m.id])')
 elif "location.href=FILE[m.id]+'.html'" in hub:
@@ -72,6 +74,15 @@ elif "location.href=FILE[m.id]+'.html'" in hub:
 else:
     sys.exit('Could not find the hub launch line in index.html - was it edited?')
 
+hub = re.sub(r'\.a-ecl(?![a-z])', '.a-cosmic', hub)
+hub = re.sub(r'\.a-pil(?![a-z])', '.a-pilot', hub)
+
+NEWCSS = ".a-builder{background:linear-gradient(#050914,#101a3a)}.a-builder::before{content:'';position:absolute;left:50%;top:50%;width:calc(110px + var(--v)*70px);height:30px;margin:-15px 0 0 calc((110px + var(--v)*70px)/-2);background:repeating-linear-gradient(90deg,#2a64d8 0 18px,#8fb4ff 18px 20px);transition:.25s}.a-builder::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:58px;margin:-29px;border-radius:4px;background:#d5dcec;box-shadow:0 -14px 0 -10px #ffb454}.a-landing{background:linear-gradient(#000,#1b1b22 72%,#6d6d78 73%)}.a-landing::before{content:'';position:absolute;left:50%;bottom:calc(30px + var(--v)*60px);width:22px;height:30px;margin-left:-11px;background:#e8ecf6;clip-path:polygon(50% 0,100% 100%,0 100%);transition:bottom .25s}.a-landing::after{content:'';position:absolute;left:calc(50% - 22px);bottom:26px;width:44px;height:5px;background:#d8dbe4}</style>"
+NEWM = "M.push({id:'builder',n:'Spacecraft Builder',t:'Team engineering',lv:'Intermediate',d:'Design a spacecraft with solar panels, batteries, antennas and instruments. Work as a team of up to 4 engineers.',learn:['How mass, power and cost trade off','Why every part needs power and cooling','How teams decide together'],ctl:[['+ / −','Add or remove parts'],['Role chips','Pick your engineer role'],['Launch vote','Team decides to launch']],demo:{l:'Solar panels',a:0,b:10,s:1,v:2,f:v=>'Panels make <b>'+v*60+' W</b>. A basic spacecraft needs about 110 W.',art:v=>v/10}},{id:'landing',n:'Rocket Landing',t:'2D flight game',lv:'Intermediate',d:'Land a rocket safely on the Moon, Mars or Earth. Learn why timing the braking burn matters.',learn:['Why landing speed matters (kinetic energy)','How gravity and air change a landing','What stopping distance means'],ctl:[['W / Space','Fire engine'],['A D / arrows','Tilt ship'],['1 · 2 · 3','Moon, Mars, Earth']],demo:{l:'Touchdown speed (m/s)',a:0,b:30,s:1,v:5,f:v=>'A 1-tonne lander carries <b>'+(0.5*v*v).toFixed(0)+' kJ</b> on impact '+(v<5?'(safe landing)':'(crash)'),art:v=>1-v/30}});const FILE={builder:'builder',landing:'landing',"
+for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", "seen.size*100/M.length+'%'"), ("' / 5'+(seen.size==5", "' / '+M.length+(seen.size==M.length"), ('Explore all 5', 'Explore all 7')]:
+    if a not in hub:
+        sys.exit('Hub: could not find ' + a)
+    hub = hub.replace(a, b, 1)
 hub = hub.replace('</body>', LOADER + '</body>')
 
 out = root / 'odyssey.html'

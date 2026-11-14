@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rocket Landing</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap"><link rel="stylesheet" href="../assets/common.css">
+<style>canvas.main{touch-action:none}.tb{position:fixed;bottom:22px;z-index:12;width:78px;height:78px;border-radius:50%;border:2px solid var(--cy);background:rgba(6,11,28,.7);color:var(--tx);font-weight:600;font-size:13px;font-family:inherit;display:none}@media(pointer:coarse){.tb{display:block}}.bad{color:var(--rd)}</style></head><body>
+<canvas class="main" id="c"></canvas><a class="back" href="../index.html">← Hub</a>
+<button class="tb" id="bl" style="left:20px">◀</button><button class="tb" id="br" style="left:110px">▶</button><button class="tb" id="bt" style="right:20px;width:92px;height:92px">THRUST</button>
+<div class="panel" style="right:12px;top:12px;width:min(290px,calc(100% - 24px))"><h3 id="wn"></h3><div class="chips" id="wc"></div>
+<p>Gravity: <span class="rd" id="g"></span><br>Altitude: <span class="rd" id="al"></span><br>Falling speed: <span class="rd" id="vy"></span> <small>(safe: under 5)</small><br>Sideways speed: <span class="rd" id="vx"></span> <small>(safe: under 3)</small><br>Tilt: <span class="rd" id="an"></span> <small>(safe: under 10°)</small><br>Fuel: <span class="rd" id="fu"></span><br>Stopping distance: <span class="rd" id="sd"></span></p><div class="tip" id="adv"></div><h4>Did you know?</h4><p class="mu" id="ft"></p></div>
+<div class="ov" id="ov"><div><h2>Rocket Landing</h2><ul><li>Land on the grey <b>pad</b> without crashing. Press <b>1 · 2 · 3</b> for the Moon, Mars or Earth.</li><li><b>W / ↑ / Space</b> fires the engine. <b>A D / ← →</b> tilt the ship. Phone: use the buttons.</li><li>The engine pushes along the nose, so <b>keep the ship upright</b> before you burn.</li><li>The <b>Stopping distance</b> shows how high you must start braking. Burn too late and you crash.</li></ul><button class="btn" id="go">START</button></div></div>
+<div class="ov off" id="eo"><div><h2 id="et"></h2><p id="ep"></p><button class="btn" id="re">TRY AGAIN</button> <button class="btn" id="nx">NEXT WORLD</button></div></div>
+<script>
+const $=i=>document.getElementById(i),cl=(v,a,b)=>Math.max(a,Math.min(b,v)),cv=$('c'),x=cv.getContext('2d'),A=15;
+const WD={moon:{n:'The Moon',g:1.62,k:0,h:600,vy:-35,col:'#8a8a8f',sky:['#000','#000'],f:'There is no air on the Moon, so parachutes are useless. Only rocket thrust can slow you down.'},
+mars:{n:'Mars',g:3.71,k:.00002,h:900,vy:-55,col:'#a8502c',sky:['#7a4a3a','#c79a76'],f:'Mars air is only 1% as thick as Earth\u2019s. Real rovers use a parachute first, then rockets for the last part.'},
+earth:{n:'Earth',g:9.81,k:.0015,h:900,vy:-40,col:'#3f7a3a',sky:['#4a86c8','#a8d0f0'],f:'Thick air creates drag that grows with speed squared, so falling objects reach a top speed called terminal velocity.'}};
+const ORD=['moon','mars','earth'];let w,cur='moon',s,keys={},tt=0,tl=0,tr=0,ended=0;
+function start(k){cur=k;w=WD[k];ended=0;s={x:(Math.random()-.5)*300,y:w.h,vx:(Math.random()-.5)*16,vy:w.vy,a:0,fuel:100,th:0};$('eo').classList.add('off');
+$('wn').textContent=w.n;$('g').textContent=w.g+' m/s²';$('ft').textContent=w.f;$('wc').innerHTML=ORD.map((q,i)=>'<button class="chip '+(q==k?'on':'')+'" data-k="'+q+'">'+(i+1)+' '+WD[q].n+'</button>').join('')}
+$('wc').onclick=e=>{if(e.target.dataset.k)start(e.target.dataset.k)};
+addEventListener('keydown',e=>{keys[e.code]=1;if(e.code=='Digit1')start('moon');if(e.code=='Digit2')start('mars');if(e.code=='Digit3')start('earth');if(e.code=='Space')e.preventDefault()});addEventListener('keyup',e=>keys[e.code]=0);
+const hold=(id,f)=>{const b=$(id);b.onpointerdown=()=>f(1);b.onpointerup=b.onpointercancel=()=>f(0)};hold('bl',v=>tl=v);hold('br',v=>tr=v);hold('bt',v=>tt=v);
+$('go').onclick=()=>$('ov').classList.add('off');$('re').onclick=()=>start(cur);$('nx').onclick=()=>start(ORD[(ORD.indexOf(cur)+1)%3]);
+function end(ok){ended=1;const v=Math.abs(s.vy),pad=Math.abs(s.x)<=20,ke=Math.round(.5*1000*v*v/1000),sc=ok?Math.round(500+s.fuel*5+(pad?300:0)):0;
+$('et').textContent=ok?(pad?'PERFECT LANDING':'LANDED (off the pad)'):'CRASHED';
+$('ep').innerHTML=(ok?'Touchdown at '+v.toFixed(1)+' m/s with '+s.fuel.toFixed(0)+'% fuel left. Score <b>'+sc+'</b>.':'You hit at '+v.toFixed(1)+' m/s (sideways '+Math.abs(s.vx).toFixed(1)+' m/s, tilt '+Math.abs(s.a*57.3).toFixed(0)+'°). Safe is under 5 m/s down, 3 m/s sideways, 10° tilt.')+'<br><br><b>Science:</b> a 1-tonne lander at '+v.toFixed(1)+' m/s carries '+ke+' kJ of energy (½mv²). Doubling the speed makes it <b>4 times</b> bigger, which is why braking early matters. Rockets also burn fuel just to fight gravity, so '+w.n+' ('+w.g+' m/s²) '+(w.g>5?'is costly.':'is gentle.');$('eo').classList.remove('off')}
+let last=performance.now();
+function loop(t){requestAnimationFrame(loop);const dt=Math.min(.04,(t-last)/1e3);last=t;
+if(!ended&&$('ov').classList.contains('off')){const th=(keys.KeyW||keys.ArrowUp||keys.Space||tt)&&s.fuel>0,rot=(keys.KeyD||keys.ArrowRight||tr?1:0)-(keys.KeyA||keys.ArrowLeft||tl?1:0);s.th=th?1:0;s.a+=rot*1.4*dt;
+const sp=Math.hypot(s.vx,s.vy);let ax=-w.k*sp*s.vx,ay=-w.g-w.k*sp*s.vy;if(th){ax+=A*Math.sin(s.a);ay+=A*Math.cos(s.a);s.fuel=Math.max(0,s.fuel-5*dt)}
+s.vx+=ax*dt;s.vy+=ay*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.y<=0){s.y=0;end(Math.abs(s.vy)<5&&Math.abs(s.vx)<3&&Math.abs(s.a)<.175)}}
+const sd=s.vy<0?s.vy*s.vy/(2*(A-w.g)):0,bad=(v,m)=>v>m?'bad':'rd';
+$('al').textContent=s.y.toFixed(0)+' m';$('vy').textContent=Math.abs(s.vy).toFixed(1)+' m/s';$('vy').className=bad(Math.abs(s.vy),5);$('vx').textContent=Math.abs(s.vx).toFixed(1)+' m/s';$('vx').className=bad(Math.abs(s.vx),3);
+$('an').textContent=Math.abs(s.a*57.3).toFixed(0)+'°';$('an').className=bad(Math.abs(s.a),.175);$('fu').textContent=s.fuel.toFixed(0)+'%';$('sd').textContent=sd.toFixed(0)+' m';
+$('adv').textContent=Math.abs(s.a)>.175?'Level the ship. Thrust pushes along the nose, so a tilted burn sends you sideways.':s.y<sd*1.15+10&&s.vy<-5?'BURN NOW! You are at the stopping distance.':Math.abs(s.vx)>3?'You drift sideways. Tilt slightly against the drift, burn briefly, then level again.':s.fuel<15?'Fuel is low. Short bursts save fuel.':'Free fall. Wait until the altitude drops to the stopping distance, then burn.';
+const W=innerWidth,H=innerHeight,d=devicePixelRatio||1;if(cv.width!=W*d||cv.height!=H*d){cv.width=W*d;cv.height=H*d}x.setTransform(d,0,0,d,0,0);
+const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,w.sky[0]);g.addColorStop(1,w.sky[1]);x.fillStyle=g;x.fillRect(0,0,W,H);
+if(cur=='moon'){x.fillStyle='#fff';for(let i=0;i<90;i++)x.fillRect((i*733%997)/997*W,(i*389%811)/811*H*.8,1.5,1.5)}
+const vh=Math.max(120,s.y*1.25+60),sc=H*.75/vh,gy=H*.85,X=m=>W/2+(m-s.x)*sc,Y=m=>gy-m*sc;
+x.fillStyle=w.col;x.fillRect(0,gy,W,H-gy);x.fillStyle='#d8dbe4';x.fillRect(X(-20),gy,40*sc,Math.max(4,3*sc));
+x.setLineDash([6,6]);x.strokeStyle='#ff6b7a';x.beginPath();x.moveTo(0,Y(sd));x.lineTo(W,Y(sd));x.stroke();x.setLineDash([]);x.fillStyle='#ff6b7a';x.font='12px Chakra Petch,sans-serif';x.fillText('stopping distance: start braking at this height',10,Y(sd)-5);
+const L=Math.max(16,9*sc);x.save();x.translate(W/2,Y(s.y)-L*.9);x.rotate(s.a);
+if(s.th){x.fillStyle='#ffb454';x.beginPath();x.moveTo(-L*.3,L*.9);x.lineTo(0,L*(1.8+Math.random()*.6));x.lineTo(L*.3,L*.9);x.fill()}
+x.fillStyle='#e8ecf6';x.beginPath();x.moveTo(0,-L);x.lineTo(L*.5,L*.9);x.lineTo(-L*.5,L*.9);x.fill();x.strokeStyle='#8d97ad';x.lineWidth=2;x.beginPath();x.moveTo(-L*.5,L*.9);x.lineTo(-L*.8,L*1.1);x.moveTo(L*.5,L*.9);x.lineTo(L*.8,L*1.1);x.stroke();x.fillStyle='#4fd8ff';x.beginPath();x.arc(0,-L*.2,L*.15,0,7);x.fill();x.restore()}
+start('moon');requestAnimationFrame(loop);
+</script></body></html>

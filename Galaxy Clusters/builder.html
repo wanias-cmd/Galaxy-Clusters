@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Spacecraft Builder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap"><link rel="stylesheet" href="../assets/common.css">
+<style>.r{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:13px}.r span{flex:1}.r button,.q{width:26px;height:26px;border:1px solid var(--ln);background:#0f1a33;color:var(--tx);border-radius:6px;cursor:pointer}button:disabled{opacity:.3;cursor:not-allowed}.bar{height:6px;background:#1a2748;border-radius:3px;margin:2px 0 7px;overflow:hidden}.bar i{display:block;height:100%}.bad{color:var(--rd)}.btn:disabled{opacity:.35}.panel ul{margin:4px 0;padding-left:18px}.btn.s{padding:7px 14px;margin:3px 3px 3px 0}</style></head><body>
+<canvas class="main" id="c"></canvas><a class="back" href="../index.html">← Hub</a>
+<div class="panel" style="left:12px;top:56px;width:min(290px,calc(100% - 24px))"><h3>Spacecraft Builder</h3><h4>Your role</h4><div class="chips" id="rl"></div><h4>Components</h4><div id="pl"></div><h4>Launch rocket</h4><div class="chips" id="rk"></div></div>
+<div class="panel" style="right:12px;top:12px"><h4 style="margin-top:0">Mission stats</h4><div id="st"></div><h4>AI Mission Advisor</h4><div class="tip" id="adv"></div><h4>Team</h4><div id="pn" class="mu"></div><div id="vt"></div><div class="tip" id="res" style="display:none"></div></div>
+<div class="ov" id="ov"><div><h2>Spacecraft Builder</h2><ul><li>Pick a <b>role</b>. Each role controls different parts, so teammates must work together. Playing alone? Choose <b>Solo</b>.</li><li>Use <b>+ / −</b> to add parts. Every part changes <b>mass, power and cost</b>.</li><li>Stay under the rocket&rsquo;s mass limit and the $100M budget.</li><li>The <b>Advisor</b> explains any problem in plain words.</li><li>When the design is ready, <b>Budget &amp; Ops</b> starts a launch vote. Open this page in up to 4 browser tabs to play as a team.</li></ul><button class="btn" id="go">START</button></div></div>
+<script>
+const $=i=>document.getElementById(i),cv=$('c'),x=cv.getContext('2d'),me=Math.random().toString(36).slice(2,8);
+const RL={sys:'Systems Engineer',pay:'Payload Engineer',pwr:'Power & Thermal',ops:'Budget & Ops',solo:'Solo (all roles)'};
+const P=[['solar','Solar panel',8,60,4,'pwr'],['batt','Battery',10,0,3,'pwr'],['rad','Radiator',6,0,2,'pwr'],['cam','Camera',7,-30,6,'pay'],['sens','Science sensor',4,-20,4,'pay'],['ant','Antenna',5,-15,2,'sys'],['comm','Comm system',6,-25,5,'sys'],['fuel','Fuel tank',15,0,3,'ops']];
+const RK=[['Small rocket',150,20],['Medium rocket',350,45],['Heavy rocket',800,90]],BUDGET=100;
+let S={v:0,parts:{solar:2,batt:1,rad:2,ant:1,comm:1,cam:1},rk:0,prop:0,votes:{}},role=null,peers={},note='';
+const ch=new BroadcastChannel('odyssey-builder'),send=o=>ch.postMessage(Object.assign({from:me},o)),ST=Array.from({length:150},()=>[Math.random(),Math.random()]);
+const act=()=>Object.keys(peers).filter(k=>Date.now()-peers[k].at<6000),can=r=>role=='solo'||role==r;
+function calc(){const c=S.parts,r=RK[S.rk];let m=50,cost=10+r[2],gen=0,cons=40;P.forEach(p=>{const n=c[p[0]]||0;m+=n*p[2];cost+=n*p[4];if(p[3]>0)gen+=n*p[3];else cons-=n*p[3]});
+const o={m,cost,gen,cons,cap:r[1],bat:(c.batt||0)*150,ecl:Math.round(cons*.6),cool:(c.rad||0)*40,heat:Math.round(cons*.5)},I=[];
+if(m>o.cap)I.push('Your spacecraft is '+(m-o.cap)+' kg over the '+r[0]+'\u2019s '+o.cap+' kg limit. Remove unneeded equipment or choose a larger rocket.');
+if(cost>BUDGET)I.push('You are $'+(cost-BUDGET)+'M over the $'+BUDGET+'M budget. Remove an expensive part or pick a smaller rocket.');
+if(gen<cons)I.push('Not enough power: panels make '+gen+' W but the systems need '+cons+' W. Add a solar panel (+60 W) or remove an instrument.');
+if(o.bat<o.ecl)I.push('In Earth\u2019s shadow (about 35 min) you need '+o.ecl+' Wh but batteries hold '+o.bat+' Wh. Add a battery.');
+if(o.cool<o.heat)I.push('Electronics turn power into heat. Radiators remove '+o.cool+' W but '+o.heat+' W is needed. Add a radiator.');
+if(!c.ant||!c.comm)I.push('To send data home you need both an antenna and a comm system.');
+if(!(c.cam||c.sens))I.push('There is nothing to study. Add a camera or a science sensor.');
+o.I=I;o.life=1+(c.fuel||0)*1.5;o.score=Math.round((c.cam||0)*30+(c.sens||0)*20+o.life*10+(BUDGET-cost)*1.5+(o.cap-m)/5);return o}
+function mut(f,reset){f(S);if(reset){S.prop=0;S.votes={}}S.v++;send({t:'s',S});render()}
+function ping(){if(role)send({t:'p',role})}
+function render(){const o=calc(),all=[me].concat(act()),n=all.length;
+$('rl').innerHTML=Object.keys(RL).map(k=>'<button class="chip'+(role==k?' on':'')+'" data-role="'+k+'">'+RL[k]+'</button>').join('');
+$('pl').innerHTML=P.map(p=>{const e=can(p[5]);return '<div class="r"><span>'+p[1]+' <small>'+p[2]+'kg · '+(p[3]>0?'+':'')+p[3]+'W · $'+p[4]+'M</small></span><button class="q" data-p="'+p[0]+'" data-d="-1"'+(e?'':' disabled')+'>−</button><b>'+(S.parts[p[0]]||0)+'</b><button class="q" data-p="'+p[0]+'" data-d="1"'+(e?'':' disabled')+'>+</button></div>'}).join('');
+$('rk').innerHTML=RK.map((r,i)=>'<button class="chip'+(S.rk==i?' on':'')+'" data-rk="'+i+'"'+(can('sys')?'':' disabled')+'>'+r[0]+' · '+r[1]+'kg · $'+r[2]+'M</button>').join('');
+const bar=(l,v,mx,t)=>'<div class="'+(v>mx?'bad':'')+'">'+l+': <b>'+t+'</b></div><div class="bar"><i style="width:'+Math.min(100,v/mx*100)+'%;background:'+(v>mx?'#ff6b7a':'#5cf0b0')+'"></i></div>';
+$('st').innerHTML=bar('Mass',o.m,o.cap,o.m+' / '+o.cap+' kg')+bar('Cost',o.cost,BUDGET,'$'+o.cost+'M / $'+BUDGET+'M')+bar('Power use',o.cons,Math.max(1,o.gen),o.cons+' W used / '+o.gen+' W made')+bar('Eclipse battery',o.ecl,Math.max(1,o.bat),o.ecl+' Wh needed / '+o.bat+' Wh')+bar('Heat',o.heat,Math.max(1,o.cool),o.heat+' W heat / '+o.cool+' W cooling')+'<div>Mission life: <b>'+o.life+' years</b></div>';
+$('adv').innerHTML=note?note:!role?'Choose a role to start building.':o.I.length?'<ul>'+o.I.map(i=>'<li>'+i+'</li>').join('')+'</ul>':'Design looks launch-ready. Budget &amp; Ops can now start a launch vote.';
+$('pn').innerHTML=all.map(k=>(k==me?'<b>You</b>':'Player '+k.slice(0,3))+': '+(RL[k==me?role:peers[k].role]||'choosing')).join('<br>')+'<br>'+n+' / 4 players';
+const y=all.filter(k=>S.votes[k]===true).length,no=all.filter(k=>S.votes[k]===false).length,e=can('ops');
+$('vt').innerHTML=S.prop?'<div>Launch vote: <b>'+y+' yes · '+no+' no</b> of '+n+'</div><button class="btn s" data-vote="1">Vote YES</button><button class="btn s" data-vote="0">Vote NO</button>':'<button class="btn s" id="ln"'+(e?'':' disabled')+'>Propose launch vote</button>';
+const r=$('res'),ok=S.prop&&y*2>n;r.style.display=S.prop&&(ok||no*2>=n)?'block':'none';
+r.innerHTML=ok?(o.I.length?'Vote passed but the design still has problems, so launch is blocked.':'<b>LAUNCH APPROVED.</b> Team mission score: <span class="rd">'+o.score+'</span><br><small>Science + mission life + money saved + spare mass.</small>'):'Launch vote rejected. Change the design and try again.'}
+function setRole(r){const t=act().filter(k=>peers[k].role==r);note='';if(r=='solo'&&act().length)note='Solo mode is only for playing alone.';else if(r!='solo'&&t.length)note='That role is already taken by a teammate.';else if(act().length>=4)note='Room full: 4 players maximum.';else{role=r;ping()}render()}
+document.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const d=b.dataset;
+if(d.role)setRole(d.role);else if(d.p)mut(s=>{s.parts[d.p]=Math.max(0,Math.min(10,(s.parts[d.p]||0)+ +d.d))},1);else if(d.rk)mut(s=>s.rk=+d.rk,1);
+else if(b.id=='ln')mut(s=>{s.prop=1;s.votes={};s.votes[me]=true});else if(d.vote)mut(s=>s.votes[me]=d.vote=='1')};
+ch.onmessage=e=>{const d=e.data;if(d.t=='p')peers[d.from]={role:d.role,at:Date.now()};if(d.t=='x')delete peers[d.from];if(d.t=='s'&&d.S.v>S.v)S=d.S;if(d.t=='h'&&S.v>0)send({t:'s',S});render()};
+addEventListener('beforeunload',()=>send({t:'x'}));setInterval(()=>{ping();render()},2000);send({t:'h'});
+function draw(){requestAnimationFrame(draw);const W=innerWidth,H=innerHeight,d=devicePixelRatio||1,c=S.parts;if(cv.width!=W*d||cv.height!=H*d){cv.width=W*d;cv.height=H*d}x.setTransform(d,0,0,d,0,0);x.fillStyle='#02040b';x.fillRect(0,0,W,H);x.fillStyle='rgba(220,235,255,.6)';ST.forEach(s=>x.fillRect(s[0]*W,s[1]*H,1.5,1.5));
+x.translate(W/2,H/2+30);const u=Math.min(W/860,H/580);x.scale(u,u);const R=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+for(let i=0;i<(c.solar||0);i++){const s=i%2?1:-1,px=50+(i>>1)*64,a=s>0?px:-px-56;R(a,-48,56,96,'#2a64d8');x.strokeStyle='#8fb4ff';x.strokeRect(a,-48,56,96);x.beginPath();x.moveTo(a+28,-48);x.lineTo(a+28,48);x.moveTo(a,0);x.lineTo(a+56,0);x.stroke()}
+R(-45,-60,90,120,'#d5dcec');R(-45,-60,90,10,'#8d97ad');
+for(let i=0;i<(c.ant||0);i++){const a=-30+i*20;x.strokeStyle='#cfd6e6';x.beginPath();x.moveTo(a,-60);x.lineTo(a,-95);x.stroke();x.fillStyle='#ffb454';x.beginPath();x.arc(a,-98,9,Math.PI,0);x.fill()}
+for(let i=0;i<(c.rad||0);i++)R(i%2?47:-61,-52+(i>>1)*16,14,12,'#9aa6bf');
+for(let i=0;i<(c.comm||0);i++)R(-38+i*18,-48,14,12,'#ffb454');
+for(let i=0;i<(c.cam||0);i++){R(-38+i*22,-30,18,18,'#1a2036');R(-33+i*22,-25,8,8,'#4fd8ff')}
+for(let i=0;i<(c.sens||0);i++){x.fillStyle='#5cf0b0';x.beginPath();x.arc(-30+i*14,5,5,0,7);x.fill()}
+for(let i=0;i<(c.batt||0);i++)R(-38+(i%5)*16,22+Math.floor(i/5)*14,12,10,'#3aa86f');
+for(let i=0;i<(c.fuel||0);i++)R(-40+(i%3)*28,66+Math.floor(i/3)*40,22,36,'#b9c1d6');
+x.fillStyle='#8fa5cf';x.font='14px Chakra Petch,sans-serif';x.fillText(RK[S.rk][0]+' · '+calc().m+' kg',-60,-130)}
+$('go').onclick=()=>$('ov').classList.add('off');render();draw();
+</script></body></html>
