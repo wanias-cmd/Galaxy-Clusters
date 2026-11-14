@@ -11,9 +11,45 @@ const $=i=>document.getElementById(i),cv=$('c'),x=cv.getContext('2d'),me=Math.ra
 const RL={sys:'Systems Engineer',pay:'Payload Engineer',pwr:'Power & Thermal',ops:'Budget & Ops',solo:'Solo (all roles)'};
 const P=[['solar','Solar panel',8,60,4,'pwr'],['batt','Battery',10,0,3,'pwr'],['rad','Radiator',6,0,2,'pwr'],['cam','Camera',7,-30,6,'pay'],['sens','Science sensor',4,-20,4,'pay'],['ant','Antenna',5,-15,2,'sys'],['comm','Comm system',6,-25,5,'sys'],['fuel','Fuel tank',15,0,3,'ops']];
 const RK=[['Small rocket',150,20],['Medium rocket',350,45],['Heavy rocket',800,90]],BUDGET=100;
-let S={v:0,parts:{solar:2,batt:1,rad:2,ant:1,comm:1,cam:1},rk:0,prop:0,votes:{}},role=null,peers={},note='',tx=null,pr=null,conns=[];
-const ch=new BroadcastChannel('odyssey-builder'),send=o=>{const m=Object.assign({from:me},o);tx?tx(m):ch.postMessage(m)},ST=Array.from({length:150},()=>[Math.random(),Math.random()]);
+let S={v:0,parts:{solar:2,batt:1,rad:2,ant:1,comm:1,cam:1},rk:0,prop:0,votes:{}},role=null,peers={},note='',tx=null,pr=null,conns=[],joinTimer=null;
+const ST=Array.from({length:150},()=>[Math.random(),Math.random()]);
 const act=()=>Object.keys(peers).filter(k=>Date.now()-peers[k].at<6000),can=r=>role=='solo'||role==r;
+
+// Local tab sync channel
+let ch=null;
+const recv=d=>{if(d.t=='p')peers[d.from]={role:d.role,at:Date.now()};if(d.t=='x')delete peers[d.from];if(d.t=='s'&&d.S.v>S.v)S=d.S;if(d.t=='h'&&S.v>0)send({t:'s',S});render()};
+function initLocalChannel(){if(ch)return;ch=new BroadcastChannel('odyssey-builder');ch.onmessage=e=>recv(e.data)}
+initLocalChannel();
+const send=o=>{const m=Object.assign({from:me},o);tx?tx(m):(ch&&ch.postMessage(m))};
+
+// ICE servers (STUN + TURN) so WebRTC works across different networks, mobile data, and strict NATs
+const PEER_CFG={
+  debug:1,
+  config:{
+    iceServers:[
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'stun:stun.cloudflare.com:3478'},
+      {urls:'stun:openrelay.metered.ca:80'},
+      {
+        urls:'turn:openrelay.metered.ca:80',
+        username:'openrelayproject',
+        credential:'openrelayproject'
+      },
+      {
+        urls:'turn:openrelay.metered.ca:443',
+        username:'openrelayproject',
+        credential:'openrelayproject'
+      },
+      {
+        urls:'turn:openrelay.metered.ca:443?transport=tcp',
+        username:'openrelayproject',
+        credential:'openrelayproject'
+      }
+    ]
+  }
+};
+
 function calc(){const c=S.parts,r=RK[S.rk];let m=50,cost=10+r[2],gen=0,cons=40;P.forEach(p=>{const n=c[p[0]]||0;m+=n*p[2];cost+=n*p[4];if(p[3]>0)gen+=n*p[3];else cons-=n*p[3]});
 const o={m,cost,gen,cons,cap:r[1],bat:(c.batt||0)*150,ecl:Math.round(cons*.6),cool:(c.rad||0)*40,heat:Math.round(cons*.5)},I=[];
 if(m>o.cap)I.push('Your spacecraft is '+(m-o.cap)+' kg over the '+r[0]+'\u2019s '+o.cap+' kg limit. Remove unneeded equipment or choose a larger rocket.');
@@ -24,6 +60,7 @@ if(o.cool<o.heat)I.push('Electronics turn power into heat. Radiators remove '+o.
 if(!c.ant||!c.comm)I.push('To send data home you need both an antenna and a comm system.');
 if(!(c.cam||c.sens))I.push('There is nothing to study. Add a camera or a science sensor.');
 o.I=I;o.life=1+(c.fuel||0)*1.5;o.score=Math.round((c.cam||0)*30+(c.sens||0)*20+o.life*10+(BUDGET-cost)*1.5+(o.cap-m)/5);return o}
+
 function mut(f,reset){f(S);if(reset){S.prop=0;S.votes={}}S.v++;send({t:'s',S});render()}
 function ping(){if(role)send({t:'p',role})}
 function render(){const o=calc(),all=[me].concat(act()),n=all.length;
@@ -38,23 +75,127 @@ const y=all.filter(k=>S.votes[k]===true).length,no=all.filter(k=>S.votes[k]===fa
 $('vt').innerHTML=S.prop?'<div>Launch vote: <b>'+y+' yes · '+no+' no</b> of '+n+'</div><button class="btn s" data-vote="1">Vote YES</button><button class="btn s" data-vote="0">Vote NO</button>':'<button class="btn s" id="ln"'+(e?'':' disabled')+'>Propose launch vote</button>';
 const r=$('res'),ok=S.prop&&y*2>n;r.style.display=S.prop&&(ok||no*2>=n)?'block':'none';
 r.innerHTML=ok?(o.I.length?'Vote passed but the design still has problems, so launch is blocked.':'<b>LAUNCH APPROVED.</b> Team mission score: <span class="rd">'+o.score+'</span><br><small>Science + mission life + money saved + spare mass.</small>'):'Launch vote rejected. Change the design and try again.'}
+
 function setRole(r){const t=act().filter(k=>peers[k].role==r);note='';if(r=='solo'&&act().length)note='Solo mode is only for playing alone.';else if(r!='solo'&&t.length)note='That role is already taken by a teammate.';else if(act().length>=4)note='Room full: 4 players maximum.';else{role=r;ping()}render()}
 document.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const d=b.dataset;
 if(d.role)setRole(d.role);else if(d.p)mut(s=>{s.parts[d.p]=Math.max(0,Math.min(10,(s.parts[d.p]||0)+ +d.d))},1);else if(d.rk)mut(s=>s.rk=+d.rk,1);
 else if(b.id=='ln')mut(s=>{s.prop=1;s.votes={};s.votes[me]=true});else if(d.vote)mut(s=>s.votes[me]=d.vote=='1');else if(b.id=='hs')host();else if(b.id=='jn')join($('jc').value)};
-const recv=d=>{if(d.t=='p')peers[d.from]={role:d.role,at:Date.now()};if(d.t=='x')delete peers[d.from];if(d.t=='s'&&d.S.v>S.v)S=d.S;if(d.t=='h'&&S.v>0)send({t:'s',S});render()};ch.onmessage=e=>recv(e.data);
+
 const setNet=t=>$('nt').textContent=t;
 function showRoom(code){$('rj').style.display='none';$('rc').innerHTML='ROOM CODE <span class="rd" style="font-size:24px;letter-spacing:.25em;margin-left:6px">'+code+'</span>'}
-function fail(m){setNet(m);try{pr&&pr.destroy()}catch(e){}pr=null;conns=[];$('rj').style.display='';$('rc').innerHTML=''}
-function online(){if(pr){setNet('You are already in a room.');return 0}if(typeof Peer=='undefined'){setNet('Online play needs an internet connection (PeerJS did not load).');return 0}try{ch.close()}catch(e){}peers={};tx=()=>{};return 1}
-function host(){if(!online())return;$('rj').style.display='none';setNet('Creating room…');const code=Math.random().toString(36).slice(2,6).toUpperCase();pr=new Peer('odyssey-'+code);
-pr.on('open',()=>{tx=m=>conns.forEach(c=>c.open&&c.send(m));showRoom(code);setNet('Hosting. Share this code with up to 3 friends.');ping()});
-pr.on('connection',c=>{conns.push(c);c.on('data',d=>{recv(d);conns.forEach(o=>o!==c&&o.open&&o.send(d))});c.on('close',()=>{conns=conns.filter(o=>o!==c)})});
-pr.on('error',e=>fail('Network error: '+e.type+'. Try again.'))}
-function join(code){if(pr)return setNet('You are already in a room.');code=(code||'').trim().toUpperCase();if(code.length<4)return setNet('Type the 4-letter room code first.');if(!online())return;$('rj').style.display='none';setNet('Joining room '+code+'…');pr=new Peer();
-pr.on('open',()=>{const c=pr.connect('odyssey-'+code,{reliable:true});c.on('open',()=>{tx=m=>c.open&&c.send(m);showRoom(code);setNet('Joined. You are connected to the team.');send({t:'h'});ping()});c.on('data',recv);c.on('close',()=>fail('Disconnected from the room.'));c.on('error',e=>fail('Could not join: '+e.type))});
-pr.on('error',e=>fail('Could not join: '+e.type))}
-addEventListener('beforeunload',()=>send({t:'x'}));setInterval(()=>{ping();render()},2000);send({t:'h'});
+
+function errText(e){
+  const t=e&&e.type||'';
+  if(t=='peer-unavailable')return 'Room not found. Double-check the 4-letter code or make sure the host is still open.';
+  if(t=='unavailable-id')return 'Room code collision. Click Host room again.';
+  if(t=='network'||t=='server-error'||t=='socket-error')return 'Could not reach matchmaking server. Check internet/firewall and try again.';
+  if(t=='webrtc')return 'Direct connection blocked by network firewall. Try switching Wi-Fi/mobile data.';
+  return 'Connection failed ('+(t||'timeout')+'). Try again.';
+}
+
+function fail(m){
+  clearTimeout(joinTimer);
+  setNet(m);
+  try{pr&&pr.destroy()}catch(e){}
+  pr=null;conns=[];tx=null;peers={};
+  initLocalChannel();
+  $('rj').style.display='';
+  $('rc').innerHTML='';
+  render();
+}
+
+function online(){
+  if(pr){setNet('You are already in a room.');return 0}
+  if(typeof Peer=='undefined'){setNet('Online play needs an internet connection (PeerJS did not load).');return 0}
+  if(ch){try{ch.close()}catch(e){}ch=null}
+  peers={};tx=()=>{};
+  return 1;
+}
+
+function makeCode(){
+  // Excludes ambiguous chars (0, O, 1, I, L)
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let out='';
+  for(let i=0;i<4;i++)out+=chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+
+function host(){
+  if(!online())return;
+  $('rj').style.display='none';
+  setNet('Creating room…');
+  const code=makeCode();
+  pr=new Peer('odyssey-sb-'+code,PEER_CFG);
+
+  joinTimer=setTimeout(()=>fail('Timed out creating room. Check your internet connection.'),10000);
+
+  pr.on('open',()=>{
+    clearTimeout(joinTimer);
+    tx=m=>conns.forEach(c=>c.open&&c.send(m));
+    showRoom(code);
+    setNet('Hosting. Share this code with up to 3 friends.');
+    ping();
+  });
+
+  pr.on('connection',c=>{
+    if(conns.length>=3){c.close();return}
+    conns.push(c);
+    c.on('open',()=>{
+      // Immediately send current state and host presence to the new guest
+      if(S.v>0)c.send({from:me,t:'s',S});
+      if(role)c.send({from:me,t:'p',role});
+    });
+    c.on('data',d=>{
+      recv(d);
+      conns.forEach(o=>o!==c&&o.open&&o.send(d));
+    });
+    c.on('close',()=>{
+      conns=conns.filter(o=>o!==c);
+    });
+  });
+
+  pr.on('disconnected',()=>{
+    // Auto-reconnect to signaling server if dropped while keeping existing P2P links alive
+    if(pr&&!pr.destroyed)try{pr.reconnect()}catch(e){}
+  });
+
+  pr.on('error',e=>fail(errText(e)));
+}
+
+function join(code){
+  if(pr)return setNet('You are already in a room.');
+  code=(code||'').trim().toUpperCase();
+  if(code.length<4)return setNet('Type the 4-letter room code first.');
+  if(!online())return;
+
+  $('rj').style.display='none';
+  setNet('Joining room '+code+'…');
+  pr=new Peer(PEER_CFG);
+
+  joinTimer=setTimeout(()=>fail('Connection timed out. Make sure the host has the room open and try again.'),10000);
+
+  pr.on('open',()=>{
+    const c=pr.connect('odyssey-sb-'+code,{reliable:true});
+    c.on('open',()=>{
+      clearTimeout(joinTimer);
+      tx=m=>c.open&&c.send(m);
+      showRoom(code);
+      setNet('Joined! Connected to the team.');
+      send({t:'h'});
+      ping();
+    });
+    c.on('data',recv);
+    c.on('close',()=>fail('Disconnected from the room.'));
+    c.on('error',e=>fail(errText(e)));
+  });
+
+  pr.on('error',e=>fail(errText(e)));
+}
+
+addEventListener('beforeunload',()=>send({t:'x'}));
+setInterval(()=>{ping();render()},2000);
+send({t:'h'});
+
 function draw(){requestAnimationFrame(draw);const W=innerWidth,H=innerHeight,d=devicePixelRatio||1,c=S.parts;if(cv.width!=W*d||cv.height!=H*d){cv.width=W*d;cv.height=H*d}x.setTransform(d,0,0,d,0,0);x.fillStyle='#02040b';x.fillRect(0,0,W,H);x.fillStyle='rgba(220,235,255,.6)';ST.forEach(s=>x.fillRect(s[0]*W,s[1]*H,1.5,1.5));
 x.translate(W/2,H/2+30);const u=Math.min(W/860,H/580);x.scale(u,u);const R=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
 for(let i=0;i<(c.solar||0);i++){const s=i%2?1:-1,px=50+(i>>1)*64,a=s>0?px:-px-56;R(a,-48,56,96,'#2a64d8');x.strokeStyle='#8fb4ff';x.strokeRect(a,-48,56,96);x.beginPath();x.moveTo(a+28,-48);x.lineTo(a+28,48);x.moveTo(a,0);x.lineTo(a+56,0);x.stroke()}
