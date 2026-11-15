@@ -1,6 +1,6 @@
 # Odyssey: Space Explorer Hub
 
-An interactive, browser-based space education game. Players explore seven hands-on missions that teach real physics and engineering: gravity, orbits, black holes, eclipses, spacecraft design, powered landing and interplanetary flight. Everything runs in the browser with no installation and no account.
+An interactive, browser-based space education game. Players explore hands-on missions that teach real physics and engineering: the planets, gravity, orbits, black holes, eclipses, spacecraft design, powered landing and interplanetary flight. Everything runs in the browser with no installation and no account.
 
 > **Team:** _add team name_ · **Hackathon:** _add hackathon / challenge name_ · **Live demo:** _add Vercel link_
 
@@ -18,6 +18,7 @@ Space science is usually taught from diagrams. Odyssey lets learners touch it: d
 | 4 | **Cosmic Event Simulator** | Sky simulator | Solar and lunar eclipses, meteor showers and planetary alignments on a timeline. |
 | 5 | **Spacecraft Builder** | Team engineering | Trade-offs between mass, power, heat and cost. Up to 4 players, each with an engineering role. |
 | 6 | **Rocket Landing** | 2D flight game | Gravity, drag, fuel, stopping distance and impact energy (½mv²) on three worlds. |
+| 8 | **Planet Story Tour** | 3D story tour | The Sun and all eight planets revolving in 3D at their real relative speeds. A 10-chapter story flies you from world to world with each planet's size, distance, year, day, moons, temperature and gravity. Optional voice narration, adjustable time speed. |
 | 7 | **Become a Space Pilot** | 3D flight game | Newtonian motion, fuel and power management, solar flares and a live mission-telemetry panel. |
 
 ### Highlights
@@ -38,6 +39,7 @@ Space science is usually taught from diagrams. Odyssey lets learners touch it: d
 | Cosmic Event Simulator | Event buttons, time slider, Play | Same |
 | Spacecraft Builder | + / − buttons, role chips, vote buttons | Same |
 | Rocket Landing | W / Space thrust, A D tilt, 1/2/3 world | On-screen buttons |
+| Planet Story Tour | Drag to look, scroll to zoom, click a planet, Left/Right arrows for chapters, Space for auto-play | Drag, pinch, tap, on-screen buttons |
 | Become a Space Pilot | W thrust, S brake, arrows steer, Q/E roll, F shield, C view | Stick and buttons (landscape) |
 
 ## Multiplayer (Spacecraft Builder)
@@ -69,6 +71,7 @@ src/
     cosmic.html         Cosmic Event Simulator
     builder.html        Spacecraft Builder (multiplayer)
     landing.html        Rocket Landing
+    planets.html        Planet Story Tour
     pilot.html          Become a Space Pilot
   assets/common.css     shared look for all modules
 build_odyssey.py        merges src/ into one odyssey.html

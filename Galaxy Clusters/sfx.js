@@ -36,6 +36,7 @@ addEventListener('keydown',k=>{if(/KeyW|ArrowUp|Space/.test(k.code))th=1});addEv
 const b=$('bt');if(b){b.addEventListener('pointerdown',()=>th=1);b.addEventListener('pointerup',()=>th=0);b.addEventListener('pointercancel',()=>th=0)}
 setInterval(()=>{e.g.gain.setTargetAtTime(th?.3:0,ac.currentTime,.05);r.g.gain.setTargetAtTime(th?.05:0,ac.currentTime,.05)},50);
 watch('eo',()=>{if($('eo').classList.contains('off'))return;if(/CRASH/.test(($('et')||{}).textContent||'')){noise(1,.5,600);tone(70,.9,'sawtooth',.15,0,30)}else{noise(.2,.3,300);arp([523,659,784],'triangle',.07)}})},
+planets(){pad([87.3,130.8,196,261.6],'sine',.02);setInterval(()=>tone(1800+Math.random()*1400,.8,'sine',.009),3200);watch('st',()=>{tone(523,.5,'triangle',.06);tone(784,.7,'sine',.04,.1)})},
 pilot(){}};
 W.SFX={init(key){ctx();const pos=key=='hub'?'right:12px;bottom:12px':key=='pilot'?'left:12px;top:156px':'left:104px;top:12px';
 const b=document.createElement('button');b.id='sfxb';b.setAttribute('aria-label','Toggle sound');b.style.cssText='position:fixed;z-index:70;width:38px;height:38px;border-radius:50%;border:1px solid #27407a;background:rgba(6,11,28,.85);color:#e6eeff;font-size:17px;cursor:pointer;'+pos;
