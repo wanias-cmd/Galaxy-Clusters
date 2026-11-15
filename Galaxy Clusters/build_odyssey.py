@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""Merge the Odyssey hub + 8 modules + common.css + Earth textures into ONE file: odyssey.html"""
+"""Merge the Odyssey hub + 8 modules + common.css + sfx.js + Earth textures into ONE file: odyssey.html"""
 import base64, json, pathlib, re, sys, urllib.request
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else '.')
@@ -9,6 +9,11 @@ fix = lambda s: '<' + s.lstrip() if s.lstrip().startswith('!DOCTYPE') else s
 ORDER = ['mars', 'earth', 'blackhole', 'cosmic', 'stars', 'builder', 'landing', 'pilot']
 css_path = 'assets/common.css' if (root / 'assets/common.css').exists() else 'common.css'
 css = rd(css_path)
+
+sfx_path = root / 'assets' / 'sfx.js' if (root / 'assets' / 'sfx.js').exists() else root / 'sfx.js'
+sfx = sfx_path.read_text(encoding='utf-8') if sfx_path.exists() else ''
+if not sfx:
+    print('Note: sfx.js not found, building without sound')
 
 SHIM = """<script>
 document.addEventListener('click',function(e){var a=e.target.closest('a[href="#hub"]');if(a){e.preventDefault();parent.postMessage({odyssey:'hub'},'*')}},true);
@@ -81,15 +86,15 @@ function hud(dM,spd){tele(dM,spd);"""
         h = re.sub(r"B\+'([^']+)'", r"TEX['\1']", h).replace('L.load(B+n)', 'L.load(TEX[n])')
         if not n1:
             sys.exit('Earth module: texture line not found - was earth.html edited?')
-    h = h.replace('</body>', SHIM + '</body>')
+    h = h.replace('</body>', SHIM + (('<script>' + sfx + "SFX.init('" + k + "')</script>") if sfx else '') + '</body>')
     mods[k] = h
 
 LOADER = """<div id="mod" style="position:fixed;inset:0;z-index:100;display:none;background:#02040b"><iframe id="mf" allow="fullscreen; autoplay" style="width:100%;height:100%;border:0"></iframe></div>
 <script>
 const MODS=__MODS__,ORDER=__ORDER__;let curMod=null;
-window.launchMod=function(k){curMod=k;try{const i=M.findIndex(m=>FILE[m.id]==k);if(i>=0){seen.add(i);prog()}}catch(e){}
+window.launchMod=function(k){curMod=k;if(window.SFX)SFX.hold(1);try{const i=M.findIndex(m=>FILE[m.id]==k);if(i>=0){seen.add(i);prog()}}catch(e){}
 document.getElementById('mf').srcdoc=MODS[k];document.getElementById('mod').style.display='block'};
-function closeMod(){document.getElementById('mod').style.display='none';document.getElementById('mf').srcdoc='<body style="background:#02040b"></body>';
+function closeMod(){if(window.SFX)SFX.hold(0);document.getElementById('mod').style.display='none';document.getElementById('mf').srcdoc='<body style="background:#02040b"></body>';
 try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}curMod=null}
 addEventListener('message',function(e){const d=e.data;if(!d||!d.odyssey)return;
 if(d.odyssey=='hub')closeMod();
@@ -124,7 +129,7 @@ for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", 
     if a not in hub:
         sys.exit('Hub: could not find ' + a)
     hub = hub.replace(a, b, 1)
-hub = hub.replace('</body>', LOADER + '</body>')
+hub = hub.replace('</body>', (('<script>' + sfx + "SFX.init('hub')</script>") if sfx else '') + LOADER + '</body>')
 
 out = root / 'odyssey.html'
 out.write_text(hub, encoding='utf-8')
