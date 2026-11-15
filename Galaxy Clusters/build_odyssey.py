@@ -46,16 +46,16 @@ for k in ORDER:
         ASTRO = r"""
 let view=1,ph=0,hd=0;
 const AS=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.65:r,metalness:m||0}),SU=MT(0xc4c8d0,.7),WH=MT(0xe8eaee,.7),GR=MT(0x6f7480,.5,.3);
-const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},sp=(r,n)=>new THREE.SphereGeometry(r,n||22,16),bx=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
-add(sp(.34),SU,0,1.12,0).scale.set(1,1.15,.85);add(sp(.3),SU,0,.86,0).scale.set(1,.7,.9);
+const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},sph=(r,n)=>new THREE.SphereGeometry(r,n||22,16),bx=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+add(sph(.34),SU,0,1.12,0).scale.set(1,1.15,.85);add(sph(.3),SU,0,.86,0).scale.set(1,.7,.9);
 add(bx(.22,.2,.07),GR,0,1.42,-.27);add(bx(.36,.16,.07),GR,0,1.25,-.28);
 add(bx(.64,.78,.3),WH,0,1.3,.36);add(bx(.12,.5,.2),GR,.36,1.25,.36);add(bx(.12,.5,.2),GR,-.36,1.25,.36);
-add(sp(.31,28),WH,0,1.8,0);
+add(sph(.31,28),WH,0,1.8,0);
 add(new THREE.SphereGeometry(.322,28,18,Math.PI*1.12,Math.PI*.76,Math.PI*.27,Math.PI*.46),new THREE.MeshPhongMaterial({color:0x7d8798,specular:0xffffff,shininess:120,side:THREE.DoubleSide}),0,1.8,0);
 add(new THREE.TorusGeometry(.215,.022,10,28),GR,0,1.78,-.285);add(new THREE.TorusGeometry(.2,.03,8,24),GR,0,1.5,0).rotation.x=Math.PI/2;
-const limb=(x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);add(sp(.125,14),SU,0,0,0,g);add(new THREE.CylinderGeometry(.1,.092,.46,16),SU,0,-.23,0,g);add(sp(.11,14),WH,0,-.5,0,g).scale.set(1,1.1,.9);AS.add(g);return g};
+const limb=(x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);add(sph(.125,14),SU,0,0,0,g);add(new THREE.CylinderGeometry(.1,.092,.46,16),SU,0,-.23,0,g);add(sph(.11,14),WH,0,-.5,0,g).scale.set(1,1.1,.9);AS.add(g);return g};
 const aL=limb(-.42,1.4),aR=limb(.42,1.4);aL.rotation.z=.28;aR.rotation.z=-.28;
-const leg=x=>{const g=new THREE.Group();g.position.set(x,.88,0);add(new THREE.CylinderGeometry(.13,.12,.82,16),SU,0,-.41,0,g);add(sp(.15,16),WH,0,-.8,-.06,g).scale.set(1,.7,1.5);AS.add(g);return g};
+const leg=x=>{const g=new THREE.Group();g.position.set(x,.88,0);add(new THREE.CylinderGeometry(.13,.12,.82,16),SU,0,-.41,0,g);add(sph(.15,16),WH,0,-.8,-.06,g).scale.set(1,.7,1.5);AS.add(g);return g};
 const lL=leg(-.16),lR=leg(.16);sc.add(AS);
 function astro(dx,dz,dt){const mv=Math.hypot(dx,dz)/Math.max(dt,.001);AS.visible=!!view;if(!view)return;if(mv>.1)hd=Math.atan2(-dx,-dz);AS.rotation.y+=Math.atan2(Math.sin(hd-AS.rotation.y),Math.cos(hd-AS.rotation.y))*Math.min(1,dt*10);
 AS.position.set(px,Hh(px,pz)+hy,pz);ph+=mv*dt*(1.4+wd.g*.12);const air=hy>.02,sw=air?0:Math.sin(ph)*Math.min(1,mv/3)*(.9-.04*wd.g);
