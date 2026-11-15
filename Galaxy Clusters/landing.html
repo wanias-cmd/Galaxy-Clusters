@@ -1,12 +1,13 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rocket Landing</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap"><link rel="stylesheet" href="../assets/common.css">
 <style>canvas.main{touch-action:none}.tb{position:fixed;bottom:22px;z-index:12;width:78px;height:78px;border-radius:50%;border:2px solid var(--cy);background:rgba(6,11,28,.7);color:var(--tx);font-weight:600;font-size:13px;font-family:inherit;display:none}@media(pointer:coarse){.tb{display:block}}.bad{color:var(--rd)}</style></head><body>
-<canvas class="main" id="c"></canvas><a class="back" href="../index.html">← Hub</a>
+<canvas class="main" id="c"></canvas><canvas id="c3" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas><a class="back" href="../index.html">← Hub</a>
 <button class="tb" id="bl" style="left:20px">◀</button><button class="tb" id="br" style="left:110px">▶</button><button class="tb" id="bt" style="right:20px;width:92px;height:92px">THRUST</button>
 <div class="panel" style="right:12px;top:12px;width:min(290px,calc(100% - 24px))"><h3 id="wn"></h3><div class="chips" id="wc"></div>
 <p>Gravity: <span class="rd" id="g"></span><br>Altitude: <span class="rd" id="al"></span><br>Falling speed: <span class="rd" id="vy"></span> <small>(safe: under 5)</small><br>Sideways speed: <span class="rd" id="vx"></span> <small>(safe: under 3)</small><br>Tilt: <span class="rd" id="an"></span> <small>(safe: under 10°)</small><br>Fuel: <span class="rd" id="fu"></span><br>Stopping distance: <span class="rd" id="sd"></span></p><div class="tip" id="adv"></div><h4>Did you know?</h4><p class="mu" id="ft"></p></div>
 <div class="ov" id="ov"><div><h2>Rocket Landing</h2><ul><li>Land on the grey <b>pad</b> without crashing. Press <b>1 · 2 · 3</b> for the Moon, Mars or Earth.</li><li><b>W / ↑ / Space</b> fires the engine. <b>A D / ← →</b> tilt the ship. Phone: use the buttons.</li><li>The engine pushes along the nose, so <b>keep the ship upright</b> before you burn.</li><li>The <b>Stopping distance</b> shows how high you must start braking. Burn too late and you crash.</li></ul><button class="btn" id="go">START</button></div></div>
 <div class="ov off" id="eo"><div><h2 id="et"></h2><p id="ep"></p><button class="btn" id="re">TRY AGAIN</button> <button class="btn" id="nx">NEXT WORLD</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=i=>document.getElementById(i),cl=(v,a,b)=>Math.max(a,Math.min(b,v)),cv=$('c'),x=cv.getContext('2d'),A=15;
 const WD={moon:{n:'The Moon',g:1.62,k:0,h:600,vy:-35,col:'#8a8a8f',sky:['#000','#000'],f:'There is no air on the Moon, so parachutes are useless. Only rocket thrust can slow you down.'},
@@ -37,8 +38,23 @@ if(cur=='moon'){x.fillStyle='#fff';for(let i=0;i<90;i++)x.fillRect((i*733%997)/9
 const vh=Math.max(120,s.y*1.25+60),sc=H*.75/vh,gy=H*.85,X=m=>W/2+(m-s.x)*sc,Y=m=>gy-m*sc;
 x.fillStyle=w.col;x.fillRect(0,gy,W,H-gy);x.fillStyle='#d8dbe4';x.fillRect(X(-20),gy,40*sc,Math.max(4,3*sc));
 x.setLineDash([6,6]);x.strokeStyle='#ff6b7a';x.beginPath();x.moveTo(0,Y(sd));x.lineTo(W,Y(sd));x.stroke();x.setLineDash([]);x.fillStyle='#ff6b7a';x.font='12px Chakra Petch,sans-serif';x.fillText('stopping distance: start braking at this height',10,Y(sd)-5);
-const L=Math.max(16,9*sc);x.save();x.translate(W/2,Y(s.y)-L*.9);x.rotate(s.a);
+const L=Math.max(16,9*sc);if(T3)r3(L*1.25,W,H,Y(s.y));else{x.save();x.translate(W/2,Y(s.y)-L*.9);x.rotate(s.a);
 if(s.th){x.fillStyle='#ffb454';x.beginPath();x.moveTo(-L*.3,L*.9);x.lineTo(0,L*(1.8+Math.random()*.6));x.lineTo(L*.3,L*.9);x.fill()}
-x.fillStyle='#e8ecf6';x.beginPath();x.moveTo(0,-L);x.lineTo(L*.5,L*.9);x.lineTo(-L*.5,L*.9);x.fill();x.strokeStyle='#8d97ad';x.lineWidth=2;x.beginPath();x.moveTo(-L*.5,L*.9);x.lineTo(-L*.8,L*1.1);x.moveTo(L*.5,L*.9);x.lineTo(L*.8,L*1.1);x.stroke();x.fillStyle='#4fd8ff';x.beginPath();x.arc(0,-L*.2,L*.15,0,7);x.fill();x.restore()}
+x.fillStyle='#e8ecf6';x.beginPath();x.moveTo(0,-L);x.lineTo(L*.5,L*.9);x.lineTo(-L*.5,L*.9);x.fill();x.strokeStyle='#8d97ad';x.lineWidth=2;x.beginPath();x.moveTo(-L*.5,L*.9);x.lineTo(-L*.8,L*1.1);x.moveTo(L*.5,L*.9);x.lineTo(L*.8,L*1.1);x.stroke();x.fillStyle='#4fd8ff';x.beginPath();x.arc(0,-L*.2,L*.15,0,7);x.fill();x.restore()}}
+// ---- 3D rocket (SLS-style: orange core stage, two white boosters, Orion capsule and escape tower) drawn over the 2D scene ----
+let T3=0,rk,ren3,sc3,cam3,lw=0,lh=0;
+function buildRocket(){const g=new THREE.Group(),n=new THREE.Group();g.add(n);
+const M=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.6:r,metalness:m||0}),OR=M(0xd9792b,.7),WH=M(0xf2f2f2,.5),GY=M(0x555a66,.5,.5),CP=M(0xd0d4dc,.4,.3),cy=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,20);
+const a=(geo,mt,x,y,z)=>{const o=new THREE.Mesh(geo,mt);o.position.set(x,y,z);n.add(o);return o};
+a(cy(.13,.13,1.25),OR,0,-.15,0);
+[-1,1].forEach(q=>{a(cy(.075,.075,1),WH,q*.2,-.3,0);a(new THREE.ConeGeometry(.075,.24,20),WH,q*.2,.32,0);a(cy(.035,.06,.1),GY,q*.2,-.85,0)});
+[[.05,.05],[-.05,.05],[.05,-.05],[-.05,-.05]].forEach(p=>a(cy(.03,.055,.13),GY,p[0],-.84,p[1]));
+a(cy(.09,.13,.14),WH,0,.545,0);a(cy(.09,.09,.3),WH,0,.765,0);a(cy(.03,.085,.11),CP,0,.97,0);a(cy(.006,.006,.26),GY,0,1.15,0);a(new THREE.ConeGeometry(.012,.06,8),GY,0,1.31,0);
+[[1,0],[-1,0],[0,1],[0,-1]].forEach(p=>{const l=a(cy(.008,.008,.25),GY,p[0]*.2,-.8,p[1]*.2);l.rotation.z=p[0]*.58;l.rotation.x=-p[1]*.58;a(cy(.03,.03,.012),GY,p[0]*.27,-.894,p[1]*.27)});
+const fl=new THREE.Mesh(new THREE.ConeGeometry(.09,.7,12,1,true),new THREE.MeshBasicMaterial({color:0xffb454,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));fl.rotation.x=Math.PI;n.add(fl);g.userData={fl,n};return g}
+try{if(window.THREE){ren3=new THREE.WebGLRenderer({canvas:$('c3'),alpha:true,antialias:true});ren3.setPixelRatio(Math.min(devicePixelRatio||1,2));sc3=new THREE.Scene();cam3=new THREE.OrthographicCamera(-1,1,1,-1,-3000,3000);
+sc3.add(new THREE.AmbientLight(0xffffff,.7));const dl=new THREE.DirectionalLight(0xffffff,1.2);dl.position.set(-2,3,4);sc3.add(dl);rk=buildRocket();sc3.add(rk);T3=1}}catch(e){T3=0}
+function r3(R,W,H,gy){if(W!=lw||H!=lh){lw=W;lh=H;ren3.setSize(W,H,false);cam3.left=-W/2;cam3.right=W/2;cam3.top=H/2;cam3.bottom=-H/2;cam3.updateProjectionMatrix()}
+rk.scale.setScalar(R);rk.position.set(0,H/2-gy+.9*R,0);rk.rotation.z=-s.a;rk.userData.n.rotation.y=.55;const fl=rk.userData.fl,k=.7+Math.random()*.5;fl.visible=!!s.th;fl.scale.set(1,k,1);fl.position.y=-.9-.35*k;ren3.render(sc3,cam3)}
 start('moon');requestAnimationFrame(loop);
 </script></body></html>

@@ -45,19 +45,21 @@ for k in ORDER:
     if k == 'mars':
         ASTRO = r"""
 let view=1,ph=0,hd=0;
-const AS=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.7:r,metalness:m||0}),SU=MT(0xeef0f4,.75),GR=MT(0x5a6070,.6,.3),DK=MT(0x2b2f3a,.8);
-const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},cy=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,16);
-add(cy(.3,.26,.6),SU,0,1.18,0);add(cy(.275,.275,.07),GR,0,.86,0);add(cy(.13,.17,.08),GR,0,1.52,0);
-add(new THREE.BoxGeometry(.3,.2,.06),GR,0,1.25,-.28);[-.08,0,.08].forEach((x,i)=>add(new THREE.BoxGeometry(.05,.04,.02),MT([0xff5d6c,0x5cf0b0,0x4fd8ff][i]),x,1.27,-.315));
-add(new THREE.BoxGeometry(.46,.58,.2),MT(0xd9dce4,.7),0,1.2,.29);[-.12,.12].forEach(x=>add(cy(.07,.07,.2),GR,x,1.58,.29));
-add(new THREE.SphereGeometry(.285,28,20),SU,0,1.8,0);
-const vis=add(new THREE.SphereGeometry(.296,28,20,Math.PI*1.2,Math.PI*.6,Math.PI*.3,Math.PI*.38),new THREE.MeshPhongMaterial({color:0xe2b04a,specular:0xffffff,shininess:140}),0,1.8,0);vis.material.side=THREE.DoubleSide;
-const arm=s=>{const g=new THREE.Group();g.position.set(s*.4,1.4,0);add(cy(.085,.075,.5),SU,0,-.25,0,g);add(new THREE.SphereGeometry(.1,14,10),DK,0,-.54,0,g);add(new THREE.SphereGeometry(.1,12,8),GR,0,0,0,g);AS.add(g);return g};
-const leg=s=>{const g=new THREE.Group();g.position.set(s*.14,.86,0);add(cy(.11,.1,.78),SU,0,-.39,0,g);add(new THREE.BoxGeometry(.2,.14,.34),DK,0,-.76,-.05,g);AS.add(g);return g};
-const aL=arm(-1),aR=arm(1),lL=leg(-1),lR=leg(1);add(new THREE.BoxGeometry(.03,.11,.17),MT(0x2a64d8),-.09,-.12,0,aL);sc.add(AS);
+const AS=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.65:r,metalness:m||0}),SU=MT(0xc4c8d0,.7),WH=MT(0xe8eaee,.7),GR=MT(0x6f7480,.5,.3);
+const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},sp=(r,n)=>new THREE.SphereGeometry(r,n||22,16),bx=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+add(sp(.34),SU,0,1.12,0).scale.set(1,1.15,.85);add(sp(.3),SU,0,.86,0).scale.set(1,.7,.9);
+add(bx(.22,.2,.07),GR,0,1.42,-.27);add(bx(.36,.16,.07),GR,0,1.25,-.28);
+add(bx(.64,.78,.3),WH,0,1.3,.36);add(bx(.12,.5,.2),GR,.36,1.25,.36);add(bx(.12,.5,.2),GR,-.36,1.25,.36);
+add(sp(.31,28),WH,0,1.8,0);
+add(new THREE.SphereGeometry(.322,28,18,Math.PI*1.12,Math.PI*.76,Math.PI*.27,Math.PI*.46),new THREE.MeshPhongMaterial({color:0x7d8798,specular:0xffffff,shininess:120,side:THREE.DoubleSide}),0,1.8,0);
+add(new THREE.TorusGeometry(.215,.022,10,28),GR,0,1.78,-.285);add(new THREE.TorusGeometry(.2,.03,8,24),GR,0,1.5,0).rotation.x=Math.PI/2;
+const limb=(x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);add(sp(.125,14),SU,0,0,0,g);add(new THREE.CylinderGeometry(.1,.092,.46,16),SU,0,-.23,0,g);add(sp(.11,14),WH,0,-.5,0,g).scale.set(1,1.1,.9);AS.add(g);return g};
+const aL=limb(-.42,1.4),aR=limb(.42,1.4);aL.rotation.z=.28;aR.rotation.z=-.28;
+const leg=x=>{const g=new THREE.Group();g.position.set(x,.88,0);add(new THREE.CylinderGeometry(.13,.12,.82,16),SU,0,-.41,0,g);add(sp(.15,16),WH,0,-.8,-.06,g).scale.set(1,.7,1.5);AS.add(g);return g};
+const lL=leg(-.16),lR=leg(.16);sc.add(AS);
 function astro(dx,dz,dt){const mv=Math.hypot(dx,dz)/Math.max(dt,.001);AS.visible=!!view;if(!view)return;if(mv>.1)hd=Math.atan2(-dx,-dz);AS.rotation.y+=Math.atan2(Math.sin(hd-AS.rotation.y),Math.cos(hd-AS.rotation.y))*Math.min(1,dt*10);
 AS.position.set(px,Hh(px,pz)+hy,pz);ph+=mv*dt*(1.4+wd.g*.12);const air=hy>.02,sw=air?0:Math.sin(ph)*Math.min(1,mv/3)*(.9-.04*wd.g);
-lL.rotation.x=air?-.45:sw;lR.rotation.x=air?.45:-sw;aL.rotation.x=air?-.8:-sw*.8;aR.rotation.x=air?-.8:sw*.8}
+lL.rotation.x=air?-.45:sw;lR.rotation.x=air?.45:-sw;aL.rotation.x=air?-.9:-.7-sw*.5;aR.rotation.x=air?-.9:-.7+sw*.5}
 function tv(){view=1-view;document.getElementById('vw').textContent=view?'View: astronaut (V)':'View: first person (V)'}
 document.getElementById('vw').onclick=tv;addEventListener('keydown',e=>{if(e.code=='KeyV')tv()});
 build('mars');requestAnimationFrame(loop);"""
@@ -77,7 +79,13 @@ R=[['Phase',ph],['Mission time',Math.floor(t*.8)+' days'],['Velocity',spd.toFixe
 document.getElementById('telb').innerHTML=R.map(r=>'<div style="display:flex;justify-content:space-between;gap:6px"><span style="color:#8aa0c4">'+r[0]+'</span><b style="color:'+(r[2]?'#ff5d6c':'#dcebff')+'">'+r[1]+'</b></div>').join('')}
 document.getElementById('telh').onclick=()=>{const b=document.getElementById('telb');b.style.display=b.style.display=='none'?'':'none'};if(innerHeight<500)document.getElementById('telb').style.display='none';
 function hud(dM,spd){tele(dM,spd);"""
-        for a, b in [('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg), ('<div id="dash">', TELE_DIV), ('function hud(dM,spd){', TELE_JS), ('hud(dM,spd)}', 'st.trav=(st.trav||0)+vel.length()*dt;hud(dM,spd)}')]:
+        ORION = r"""ship.children.forEach(o=>o.visible=false);
+{const m=(c,me,r)=>new THREE.MeshStandardMaterial({color:c,metalness:me||0,roughness:r==null?.5:r}),g=new THREE.Group(),a=(geo,mt,x,y,z,rx)=>{const o=new THREE.Mesh(geo,mt);o.position.set(x,y,z);if(rx)o.rotation.x=rx;g.add(o);return o},SP=new THREE.MeshStandardMaterial({color:0x143a8a,emissive:0x0a2a66,metalness:.8,roughness:.25});
+a(new THREE.CylinderGeometry(.9,2.2,2.6,28),m(0xd0d4dc,.4,.45),0,0,-2.6,-Math.PI/2);a(new THREE.CylinderGeometry(2.3,2.3,.25,28),m(0x34343c,.2,.8),0,0,-1.25,Math.PI/2);
+a(new THREE.CylinderGeometry(2.1,2.1,3,28),m(0xb9bec9,.6,.4),0,0,.4,Math.PI/2);a(new THREE.CylinderGeometry(.55,.55,.5,16),m(0x888e9a,.6,.4),0,0,-4.1,Math.PI/2);a(new THREE.ConeGeometry(.9,1.2,20),m(0x2b2f3a,.5,.6),0,0,2.5,-Math.PI/2);
+[-1,1].forEach(q=>{a(new THREE.BoxGeometry(5.6,.12,1.7),SP,q*5,0,.4);a(new THREE.BoxGeometry(.12,5.6,1.7),SP,0,q*5,.4)});ship.add(g);ex.position.z=5}
+"""
+        for a, b in [('bub.visible=false;ship.add(bub);sc.add(ship);', 'bub.visible=false;' + ORION + 'ship.add(bub);sc.add(ship);'), ('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg), ('<div id="dash">', TELE_DIV), ('function hud(dM,spd){', TELE_JS), ('hud(dM,spd)}', 'st.trav=(st.trav||0)+vel.length()*dt;hud(dM,spd)}')]:
             if a not in h:
                 sys.exit('Pilot module: could not find ' + a)
             h = h.replace(a, b, 1)
