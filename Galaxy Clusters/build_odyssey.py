@@ -1,5 +1,9 @@
 ﻿#!/usr/bin/env python3
-"""Merge the Odyssey hub + 8 modules + common.css + sfx.js + Earth textures into ONE file: odyssey.html"""
+"""Merge the Odyssey hub + 9 modules + common.css + sfx.js + Earth textures into ONE file: odyssey.html
+
+Run from your project folder:
+    python build_odyssey.py            (or: python build_odyssey.py path/to/project)
+"""
 import base64, json, pathlib, re, sys, urllib.request
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else '.')
@@ -22,6 +26,7 @@ b.style.cssText='position:fixed;left:12px;bottom:12px;z-index:25;padding:8px 14p
 b.onclick=function(){parent.postMessage({odyssey:'next'},'*')};document.body.appendChild(b)});
 </script>"""
 
+# Earth textures: downloaded once, embedded ONCE in the hub as window.ODY_TEX (shared with the Earth module).
 TEXDIR = (root / 'assets' / 'textures') if (root / 'assets').exists() else (root / 'textures')
 TEXDIR.mkdir(parents=True, exist_ok=True)
 BASE = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/'
@@ -42,22 +47,25 @@ for k in ORDER:
     h = fix(rd(mod_path))
     h = re.sub(r'<link[^>]+href=["\'](?:\.\./assets/|\.\./)?common\.css["\'][^>]*>', '<style>' + css + '</style>', h)
     h = h.replace('../index.html', '#hub').replace('index.html', '#hub')
-    if k == 'mars':
+
+    if k == 'mars':  # realistic 3D astronaut (third person) with helmet and visor
         ASTRO = r"""
 let view=1,ph=0,hd=0;
-const AS=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.7:r,metalness:m||0}),SU=MT(0xeef0f4,.75),GR=MT(0x5a6070,.6,.3),DK=MT(0x2b2f3a,.8);
-const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},cy=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,16);
-add(cy(.3,.26,.6),SU,0,1.18,0);add(cy(.275,.275,.07),GR,0,.86,0);add(cy(.13,.17,.08),GR,0,1.52,0);
-add(new THREE.BoxGeometry(.3,.2,.06),GR,0,1.25,-.28);[-.08,0,.08].forEach((x,i)=>add(new THREE.BoxGeometry(.05,.04,.02),MT([0xff5d6c,0x5cf0b0,0x4fd8ff][i]),x,1.27,-.315));
-add(new THREE.BoxGeometry(.46,.58,.2),MT(0xd9dce4,.7),0,1.2,.29);[-.12,.12].forEach(x=>add(cy(.07,.07,.2),GR,x,1.58,.29));
-add(new THREE.SphereGeometry(.285,28,20),SU,0,1.8,0);
-const vis=add(new THREE.SphereGeometry(.296,28,20,Math.PI*1.2,Math.PI*.6,Math.PI*.3,Math.PI*.38),new THREE.MeshPhongMaterial({color:0xe2b04a,specular:0xffffff,shininess:140}),0,1.8,0);vis.material.side=THREE.DoubleSide;
-const arm=s=>{const g=new THREE.Group();g.position.set(s*.4,1.4,0);add(cy(.085,.075,.5),SU,0,-.25,0,g);add(new THREE.SphereGeometry(.1,14,10),DK,0,-.54,0,g);add(new THREE.SphereGeometry(.1,12,8),GR,0,0,0,g);AS.add(g);return g};
-const leg=s=>{const g=new THREE.Group();g.position.set(s*.14,.86,0);add(cy(.11,.1,.78),SU,0,-.39,0,g);add(new THREE.BoxGeometry(.2,.14,.34),DK,0,-.76,-.05,g);AS.add(g);return g};
-const aL=arm(-1),aR=arm(1),lL=leg(-1),lR=leg(1);add(new THREE.BoxGeometry(.03,.11,.17),MT(0x2a64d8),-.09,-.12,0,aL);sc.add(AS);
+const AS=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?.65:r,metalness:m||0}),SU=MT(0xc4c8d0,.7),WH=MT(0xe8eaee,.7),GR=MT(0x6f7480,.5,.3);
+const add=(g,m,x,y,z,p)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;(p||AS).add(o);return o},sph=(r,n)=>new THREE.SphereGeometry(r,n||22,16),bx=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+add(sph(.34),SU,0,1.12,0).scale.set(1,1.15,.85);add(sph(.3),SU,0,.86,0).scale.set(1,.7,.9);
+add(bx(.22,.2,.07),GR,0,1.42,-.27);add(bx(.36,.16,.07),GR,0,1.25,-.28);
+add(bx(.64,.78,.3),WH,0,1.3,.36);add(bx(.12,.5,.2),GR,.36,1.25,.36);add(bx(.12,.5,.2),GR,-.36,1.25,.36);
+add(sph(.31,28),WH,0,1.8,0);
+add(new THREE.SphereGeometry(.322,28,18,Math.PI*1.12,Math.PI*.76,Math.PI*.27,Math.PI*.46),new THREE.MeshPhongMaterial({color:0x7d8798,specular:0xffffff,shininess:120,side:THREE.DoubleSide}),0,1.8,0);
+add(new THREE.TorusGeometry(.215,.022,10,28),GR,0,1.78,-.285);add(new THREE.TorusGeometry(.2,.03,8,24),GR,0,1.5,0).rotation.x=Math.PI/2;
+const limb=(x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);add(sph(.125,14),SU,0,0,0,g);add(new THREE.CylinderGeometry(.1,.092,.46,16),SU,0,-.23,0,g);add(sph(.11,14),WH,0,-.5,0,g).scale.set(1,1.1,.9);AS.add(g);return g};
+const aL=limb(-.42,1.4),aR=limb(.42,1.4);aL.rotation.z=.28;aR.rotation.z=-.28;
+const leg=x=>{const g=new THREE.Group();g.position.set(x,.88,0);add(new THREE.CylinderGeometry(.13,.12,.82,16),SU,0,-.41,0,g);add(sph(.15,16),WH,0,-.8,-.06,g).scale.set(1,.7,1.5);AS.add(g);return g};
+const lL=leg(-.16),lR=leg(.16);sc.add(AS);
 function astro(dx,dz,dt){const mv=Math.hypot(dx,dz)/Math.max(dt,.001);AS.visible=!!view;if(!view)return;if(mv>.1)hd=Math.atan2(-dx,-dz);AS.rotation.y+=Math.atan2(Math.sin(hd-AS.rotation.y),Math.cos(hd-AS.rotation.y))*Math.min(1,dt*10);
 AS.position.set(px,Hh(px,pz)+hy,pz);ph+=mv*dt*(1.4+wd.g*.12);const air=hy>.02,sw=air?0:Math.sin(ph)*Math.min(1,mv/3)*(.9-.04*wd.g);
-lL.rotation.x=air?-.45:sw;lR.rotation.x=air?.45:-sw;aL.rotation.x=air?-.8:-sw*.8;aR.rotation.x=air?-.8:sw*.8}
+lL.rotation.x=air?-.45:sw;lR.rotation.x=air?.45:-sw;aL.rotation.x=air?-.9:-.7-sw*.5;aR.rotation.x=air?-.9:-.7+sw*.5}
 function tv(){view=1-view;document.getElementById('vw').textContent=view?'View: astronaut (V)':'View: first person (V)'}
 document.getElementById('vw').onclick=tv;addEventListener('keydown',e=>{if(e.code=='KeyV')tv()});
 build('mars');requestAnimationFrame(loop);"""
@@ -67,7 +75,8 @@ build('mars');requestAnimationFrame(loop);"""
             if a not in h:
                 sys.exit('Mars module: could not find ' + a)
             h = h.replace(a, b, 1)
-    if k == 'pilot':
+
+    if k == 'pilot':  # EXIT button, out-of-fuel message, telemetry panel, 3D Orion spacecraft
         exitbtn = '<a class="btn" href="#hub" style="position:fixed;left:12px;top:118px;z-index:40;padding:6px 14px;font-size:13px;text-decoration:none;color:inherit;background:rgba(5,10,22,.8)">EXIT</a><div id="rot">'
         fuelmsg = "st.fuel=Math.max(0,st.fuel);if(st.fuel<=0&&msgT<=0)msg('OUT OF FUEL - press EXIT to leave','#ff5d6c');"
         TELE_DIV = '<div id="tele" style="position:absolute;right:calc(12px + env(safe-area-inset-right));top:172px;width:200px;font-size:11px;line-height:1.35;background:rgba(5,10,22,.72);border:1px solid var(--ln);border-radius:6px;padding:6px 10px"><div id="telh" style="pointer-events:auto;cursor:pointer;color:var(--am);font-weight:600;letter-spacing:.1em">MISSION TELEMETRY &#9662;</div><div id="telb"></div></div><div id="dash">'
@@ -77,15 +86,23 @@ R=[['Phase',ph],['Mission time',Math.floor(t*.8)+' days'],['Velocity',spd.toFixe
 document.getElementById('telb').innerHTML=R.map(r=>'<div style="display:flex;justify-content:space-between;gap:6px"><span style="color:#8aa0c4">'+r[0]+'</span><b style="color:'+(r[2]?'#ff5d6c':'#dcebff')+'">'+r[1]+'</b></div>').join('')}
 document.getElementById('telh').onclick=()=>{const b=document.getElementById('telb');b.style.display=b.style.display=='none'?'':'none'};if(innerHeight<500)document.getElementById('telb').style.display='none';
 function hud(dM,spd){tele(dM,spd);"""
-        for a, b in [('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg), ('<div id="dash">', TELE_DIV), ('function hud(dM,spd){', TELE_JS), ('hud(dM,spd)}', 'st.trav=(st.trav||0)+vel.length()*dt;hud(dM,spd)}')]:
+        ORION = r"""ship.children.forEach(o=>o.visible=false);
+{const m=(c,me,r)=>new THREE.MeshStandardMaterial({color:c,metalness:me||0,roughness:r==null?.5:r}),g=new THREE.Group(),a=(geo,mt,x,y,z,rx)=>{const o=new THREE.Mesh(geo,mt);o.position.set(x,y,z);if(rx)o.rotation.x=rx;g.add(o);return o},SP=new THREE.MeshStandardMaterial({color:0x143a8a,emissive:0x0a2a66,metalness:.8,roughness:.25});
+a(new THREE.CylinderGeometry(.9,2.2,2.6,28),m(0xd0d4dc,.4,.45),0,0,-2.6,-Math.PI/2);a(new THREE.CylinderGeometry(2.3,2.3,.25,28),m(0x34343c,.2,.8),0,0,-1.25,Math.PI/2);
+a(new THREE.CylinderGeometry(2.1,2.1,3,28),m(0xb9bec9,.6,.4),0,0,.4,Math.PI/2);a(new THREE.CylinderGeometry(.55,.55,.5,16),m(0x888e9a,.6,.4),0,0,-4.1,Math.PI/2);a(new THREE.ConeGeometry(.9,1.2,20),m(0x2b2f3a,.5,.6),0,0,2.5,-Math.PI/2);
+[-1,1].forEach(q=>{a(new THREE.BoxGeometry(5.6,.12,1.7),SP,q*5,0,.4);a(new THREE.BoxGeometry(.12,5.6,1.7),SP,0,q*5,.4)});ship.add(g);ex.position.z=5}
+"""
+        for a, b in [('bub.visible=false;ship.add(bub);sc.add(ship);', 'bub.visible=false;' + ORION + 'ship.add(bub);sc.add(ship);'), ('<div id="rot">', exitbtn), ('st.fuel=Math.max(0,st.fuel);', fuelmsg), ('<div id="dash">', TELE_DIV), ('function hud(dM,spd){', TELE_JS), ('hud(dM,spd)}', 'st.trav=(st.trav||0)+vel.length()*dt;hud(dM,spd)}')]:
             if a not in h:
                 sys.exit('Pilot module: could not find ' + a)
             h = h.replace(a, b, 1)
-    if k == 'earth':
-        h, n1 = re.subn(r"const B='[^']*',", 'const TEX=' + json.dumps(TEX) + ',', h)
+
+    if k == 'earth':  # use the textures embedded once in the hub (window.parent.ODY_TEX)
+        h, n1 = re.subn(r"const B='[^']*',", 'const TEX=(window.parent&&window.parent.ODY_TEX)||{},', h)
         h = re.sub(r"B\+'([^']+)'", r"TEX['\1']", h).replace('L.load(B+n)', 'L.load(TEX[n])')
         if not n1:
             sys.exit('Earth module: texture line not found - was earth.html edited?')
+
     h = h.replace('</body>', SHIM + (('<script>' + sfx + "SFX.init('" + k + "')</script>") if sfx else '') + '</body>')
     mods[k] = h
 
@@ -112,11 +129,31 @@ elif "location.href=FILE[m.id]+'.html'" in hub:
 else:
     sys.exit('Could not find the hub launch line in index.html - was it edited?')
 
+# Hub card art: JS names cards a-cosmic / a-pilot but the CSS defined a-ecl / a-pil.
 hub = re.sub(r'\.a-ecl(?![a-z])', '.a-cosmic', hub)
 hub = re.sub(r'\.a-pil(?![a-z])', '.a-pilot', hub)
 
+# 3D spinning Earth drawn behind the hub (replaces the flat 2D canvas Earth)
+HUB_EARTH = r"""(function(){
+if(!window.THREE||!window.ODY_TEX)return;let ren,cv;try{cv=document.createElement('canvas');ren=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true})}catch(e){return}
+cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none';document.getElementById('bg').insertAdjacentElement('afterend',cv);window.__earth3d=1;
+ren.setPixelRatio(Math.min(devicePixelRatio||1,2));const T=window.ODY_TEX,L=new THREE.TextureLoader(),ld=n=>L.load(T[n]),sc=new THREE.Scene(),cam=new THREE.OrthographicCamera(-1,1,1,-1,-2000,2000),SUN=new THREE.Vector3(-3,1.2,2.5).normalize();
+sc.add(new THREE.AmbientLight(0x223355,.45));const dl=new THREE.DirectionalLight(0xffffff,1.7);dl.position.copy(SUN).multiplyScalar(10);sc.add(dl);
+const E=new THREE.Group();E.rotation.z=.41;const G=new THREE.Group();G.add(E);sc.add(G);
+E.add(new THREE.Mesh(new THREE.SphereGeometry(1,96,72),new THREE.MeshPhongMaterial({map:ld('earth_atmos_2048.jpg'),specularMap:ld('earth_specular_2048.jpg'),specular:new THREE.Color(0x555555),shininess:22,normalMap:ld('earth_normal_2048.jpg')})));
+const V='varying vec2 vUv;varying vec3 vN;void main(){vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+E.add(new THREE.Mesh(new THREE.SphereGeometry(1.002,96,72),new THREE.ShaderMaterial({uniforms:{map:{value:ld('earth_lights_2048.png')},sun:{value:SUN}},vertexShader:V,fragmentShader:'uniform sampler2D map;uniform vec3 sun;varying vec2 vUv;varying vec3 vN;void main(){float n=clamp(-dot(normalize(vN),normalize(sun))*2.+.1,0.,1.);gl_FragColor=vec4(texture2D(map,vUv).rgb*vec3(1.,.8,.5)*n*1.6,1.);}',transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})));
+const cloud=new THREE.Mesh(new THREE.SphereGeometry(1.008,96,72),new THREE.MeshPhongMaterial({map:ld('earth_clouds_1024.png'),transparent:true,opacity:.85,depthWrite:false}));E.add(cloud);
+G.add(new THREE.Mesh(new THREE.SphereGeometry(1.13,64,48),new THREE.ShaderMaterial({uniforms:{sun:{value:SUN}},vertexShader:'varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform vec3 sun;varying vec3 vN;void main(){float i=pow(clamp(.6-dot(normalize(vN),vec3(0.,0.,1.)),0.,1.),4.);float d=clamp(dot(normalize(vN),normalize(sun))*.5+.7,.3,1.);gl_FragColor=vec4(vec3(.3,.6,1.)*i*1.4*d,1.);}',side:THREE.BackSide,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})));
+let w=0,h=0;function f(){requestAnimationFrame(f);const m=document.getElementById('mod');if(m&&m.style.display=='block')return;const W=innerWidth,H=innerHeight;
+if(W!=w||H!=h){w=W;h=H;ren.setSize(W,H,false);cam.left=-W/2;cam.right=W/2;cam.top=H/2;cam.bottom=-H/2;cam.updateProjectionMatrix()}
+const r=Math.min(W,H)*(W<700?.3:.42),cx=W*(W<700?.72:.8),cy=H*(W<700?.82:.66);G.position.set(cx-W/2,H/2-cy,0);G.scale.setScalar(r);E.rotation.y+=.0012;cloud.rotation.y+=.0004;ren.render(sc,cam)}f()})();"""
+hub = hub.replace('</head>', '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script></head>', 1)
+# turn off the old flat 2D Earth when the 3D one is running
+hub = hub.replace('const r=Math.min(w,h)*(w<700?.3:.42),', 'if(!window.__earth3d){const r=Math.min(w,h)*(w<700?.3:.42),', 1).replace('x.fill();requestAnimationFrame(bg)}', 'x.fill()}requestAnimationFrame(bg)}', 1)
+
 NEWCSS = ".a-planets{background:#050914}.a-planets::before{content:'';position:absolute;left:50%;top:50%;width:calc(70px + var(--v)*90px);height:calc(70px + var(--v)*90px);margin:calc((70px + var(--v)*90px)/-2) 0 0 calc((70px + var(--v)*90px)/-2);border:1px dashed rgba(79,216,255,.5);border-radius:50%;background:radial-gradient(circle at 50% 0,#7fc4ff 0 4px,transparent 5px);transition:.25s}.a-planets::after{content:'';position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px;border-radius:50%;background:radial-gradient(circle,#fff3b0,#ffb454 60%,#ff7a2a);box-shadow:0 0 22px 6px rgba(255,170,70,.55)}.a-builder{background:linear-gradient(#050914,#101a3a)}.a-builder::before{content:'';position:absolute;left:50%;top:50%;width:calc(110px + var(--v)*70px);height:30px;margin:-15px 0 0 calc((110px + var(--v)*70px)/-2);background:repeating-linear-gradient(90deg,#2a64d8 0 18px,#8fb4ff 18px 20px);transition:.25s}.a-builder::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:58px;margin:-29px;border-radius:4px;background:#d5dcec;box-shadow:0 -14px 0 -10px #ffb454}.a-stars{background:radial-gradient(circle at 20% 30%,#fff 0 1.5px,transparent 2px),radial-gradient(circle at 70% 20%,#ffd9a0 0 2px,transparent 3px),radial-gradient(circle at 50% 55%,#fff 0 1px,transparent 2px),radial-gradient(circle at 85% 65%,#9fc4ff 0 2px,transparent 3px),radial-gradient(circle at 30% 75%,#fff 0 1px,transparent 2px),linear-gradient(#02040b,#0b1230 75%,#1a2036)}.a-stars::before{content:'';position:absolute;left:50%;bottom:14px;width:calc(70px + var(--v)*60px);height:14px;margin-left:calc((70px + var(--v)*60px)/-2);background:#7a1624;border:2px solid #e0bd6a;border-radius:2px;transition:.25s}.a-landing{background:linear-gradient(#000,#1b1b22 72%,#6d6d78 73%)}.a-landing::before{content:'';position:absolute;left:50%;bottom:calc(30px + var(--v)*60px);width:22px;height:30px;margin-left:-11px;background:#e8ecf6;clip-path:polygon(50% 0,100% 100%,0 100%);transition:bottom .25s}.a-landing::after{content:'';position:absolute;left:calc(50% - 22px);bottom:26px;width:44px;height:5px;background:#d8dbe4}</style>"
-NEWM = "M.push({id:'planets',n:'Planet Story Tour',t:'3D story',lv:'Beginner',d:'Watch the Sun and all eight planets revolve in 3D while a story takes you from world to world, with the facts of each one.',learn:['Why inner planets orbit faster than outer ones','How day, year and tilt differ on every world','What makes each planet unique'],ctl:[['Drag','Rotate the view'],['Scroll / pinch','Zoom'],['Click a planet','Fly there and read about it'],['Next / Back','Move through the story']],demo:{l:'Distance from Sun (AU)',a:.4,b:30,s:.1,v:1,f:v=>'A planet this far from the Sun takes <b>'+Math.pow(v,1.5).toFixed(v<2?2:1)+' Earth years</b> to orbit once',art:v=>Math.min(1,v/30)}},{id:'stars',n:'Stargazing Night',t:'Night sky',lv:'Beginner',d:'Walk to a carpet, lie down and look up at the real night sky. Click any star to learn its name, distance and temperature.',learn:['How to find stars and constellations','Why starlight is old light','How color shows a star\u2019s temperature'],ctl:[['W A S D','Walk'],['E','Lie down / stand up'],['Click a star','See its details']],demo:{l:'Star distance (light-years)',a:4,b:2600,s:1,v:430,f:v=>'You see it as it was in <b>'+(()=>{const y=2026-Math.round(v);return y>0?'the year '+y:(1-y)+' BC'})()+'</b>',art:v=>v/2600}},{id:'builder',n:'Spacecraft Builder',t:'Team engineering',lv:'Intermediate',d:'Design a spacecraft with solar panels, batteries, antennas and instruments. Work as a team of up to 4 engineers.',learn:['How mass, power and cost trade off','Why every part needs power and cooling','How teams decide together'],ctl:[['+ / −','Add or remove parts'],['Role chips','Pick your engineer role'],['Launch vote','Team decides to launch']],demo:{l:'Solar panels',a:0,b:10,s:1,v:2,f:v=>'Panels make <b>'+v*60+' W</b>. A basic spacecraft needs about 110 W.',art:v=>v/10}},{id:'landing',n:'Rocket Landing',t:'2D flight game',lv:'Intermediate',d:'Land a rocket safely on the Moon, Mars or Earth. Learn why timing the braking burn matters.',learn:['Why landing speed matters (kinetic energy)','How gravity and air change a landing','What stopping distance means'],ctl:[['W / Space','Fire engine'],['A D / arrows','Tilt ship'],['1 · 2 · 3','Moon, Mars, Earth']],demo:{l:'Touchdown speed (m/s)',a:0,b:30,s:1,v:5,f:v=>'A 1-tonne lander carries <b>'+(0.5*v*v).toFixed(0)+' kJ</b> on impact '+(v<5?'(safe landing)':'(crash)'),art:v=>1-v/30}});const FILE={planets:'planets',stars:'stars',builder:'builder',landing:'landing',"
+NEWM = "M.push({id:'planets',n:'Planet Story Tour',t:'3D story',lv:'Beginner',d:'Watch the Sun and all eight planets revolve in 3D while a story takes you from world to world, with the facts of each one.',learn:['Why inner planets orbit faster than outer ones','How day, year and tilt differ on every world','What makes each planet unique'],ctl:[['Drag','Rotate the view'],['Scroll / pinch','Zoom'],['Click a planet','Fly there and read about it'],['Next / Back','Move through the story']],demo:{l:'Distance from Sun (AU)',a:.4,b:30,s:.1,v:1,f:v=>'A planet this far from the Sun takes <b>'+Math.pow(v,1.5).toFixed(v<2?2:1)+' Earth years</b> to orbit once',art:v=>Math.min(1,v/30)}},{id:'stars',n:'Stargazing Night',t:'Night sky',lv:'Beginner',d:'Walk to a carpet, lie down and look up at the real night sky. Click any star to learn its name, distance and temperature.',learn:['How to find stars and constellations','Why starlight is old light','How color shows a star\\u2019s temperature'],ctl:[['W A S D','Walk'],['E','Lie down / stand up'],['Click a star','See its details']],demo:{l:'Star distance (light-years)',a:4,b:2600,s:1,v:430,f:v=>'You see it as it was in <b>'+(()=>{const y=2026-Math.round(v);return y>0?'the year '+y:(1-y)+' BC'})()+'</b>',art:v=>v/2600}},{id:'builder',n:'Spacecraft Builder',t:'Team engineering',lv:'Intermediate',d:'Design a spacecraft with solar panels, batteries, antennas and instruments. Work as a team of up to 4 engineers.',learn:['How mass, power and cost trade off','Why every part needs power and cooling','How teams decide together'],ctl:[['+ / \\u2212','Add or remove parts'],['Role chips','Pick your engineer role'],['Launch vote','Team decides to launch']],demo:{l:'Solar panels',a:0,b:10,s:1,v:2,f:v=>'Panels make <b>'+v*60+' W</b>. A basic spacecraft needs about 110 W.',art:v=>v/10}},{id:'landing',n:'Rocket Landing',t:'2D flight game',lv:'Intermediate',d:'Land a rocket safely on the Moon, Mars or Earth. Learn why timing the braking burn matters.',learn:['Why landing speed matters (kinetic energy)','How gravity and air change a landing','What stopping distance means'],ctl:[['W / Space','Fire engine'],['A D / arrows','Tilt ship'],['1 \\u00b7 2 \\u00b7 3','Moon, Mars, Earth']],demo:{l:'Touchdown speed (m/s)',a:0,b:30,s:1,v:5,f:v=>'A 1-tonne lander carries <b>'+(0.5*v*v).toFixed(0)+' kJ</b> on impact '+(v<5?'(safe landing)':'(crash)'),art:v=>1-v/30}});const FILE={planets:'planets',stars:'stars',builder:'builder',landing:'landing',"
 for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", "seen.size*100/M.length+'%'"), ("' / 5'+(seen.size==5", "' / '+M.length+(seen.size==M.length"), ('Explore all 5', 'Explore all 9'),
  ('<button class="btn" id="tb" style="padding:6px 14px">Back</button>', '<button class="btn" id="tx" style="padding:6px 14px">Exit tour</button><button class="btn" id="tb" style="padding:6px 14px">Back</button>'),
  ('<button class="btn" id="tour2">Guided tour</button></div></div>', '<button class="btn" id="tour2">Guided tour</button><button class="btn" id="home">Main menu</button></div></div>'),
@@ -129,7 +166,8 @@ for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", 
     if a not in hub:
         sys.exit('Hub: could not find ' + a)
     hub = hub.replace(a, b, 1)
-hub = hub.replace('</body>', (('<script>' + sfx + "SFX.init('hub')</script>") if sfx else '') + LOADER + '</body>')
+
+hub = hub.replace('</body>', '<script>window.ODY_TEX=' + json.dumps(TEX) + ';</script><script>' + HUB_EARTH + '</script>' + (('<script>' + sfx + "SFX.init('hub')</script>") if sfx else '') + LOADER + '</body>')
 
 out = root / 'odyssey.html'
 out.write_text(hub, encoding='utf-8')
