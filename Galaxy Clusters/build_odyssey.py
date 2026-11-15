@@ -137,7 +137,86 @@ for a, b in [('</style>', NEWCSS), ('const FILE={', NEWM), ("seen.size*20+'%'", 
     if a not in hub:
         sys.exit('Hub: could not find ' + a)
     hub = hub.replace(a, b, 1)
-hub = hub.replace('</body>', (('<script>' + sfx + "SFX.init('hub')</script>") if sfx else '') + LOADER + '</body>')
+
+SPLASH_EARTH = r"""<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const sp = document.getElementById('splash');
+  if (!sp || typeof THREE === 'undefined') return;
+  const T = __SPLASH_TEX__;
+
+  const st = document.createElement('style');
+  st.textContent = '#splash::before,#splash::after{display:none!important}';
+  document.head.appendChild(st);
+
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0';
+  sp.insertBefore(cv, sp.firstChild);
+  Array.from(sp.children).forEach(el => { if (el !== cv) el.style.zIndex = '1'; });
+
+  const ren = new THREE.WebGLRenderer({canvas: cv, antialias: true, alpha: true});
+  ren.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 100);
+  cam.position.z = 4.2;
+
+  const L = new THREE.TextureLoader();
+  const earth = new THREE.Mesh(
+    new THREE.SphereGeometry(1.35, 64, 48),
+    new THREE.MeshPhongMaterial({
+      map: L.load(T['earth_atmos_2048.jpg']),
+      specularMap: L.load(T['earth_specular_2048.jpg']),
+      normalMap: L.load(T['earth_normal_2048.jpg']),
+      normalScale: new THREE.Vector2(0.85, 0.85),
+      specular: new THREE.Color(0x335577),
+      shininess: 22
+    })
+  );
+  earth.rotation.z = 0.41;
+
+  const clouds = new THREE.Mesh(
+    new THREE.SphereGeometry(1.375, 64, 48),
+    new THREE.MeshPhongMaterial({
+      map: L.load(T['earth_clouds_1024.png']),
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    })
+  );
+  earth.add(clouds);
+
+  const atmo = new THREE.Mesh(
+    new THREE.SphereGeometry(1.42, 48, 36),
+    new THREE.MeshBasicMaterial({color: 0x4fd8ff, transparent: true, opacity: 0.12, side: THREE.BackSide})
+  );
+  earth.add(atmo);
+  sc.add(earth);
+
+  const sun = new THREE.DirectionalLight(0xffffff, 1.35);
+  sun.position.set(-4, 2, 3.5);
+  sc.add(sun, new THREE.AmbientLight(0x1b2b4a, 0.55));
+
+  function resize(){
+    const w = innerWidth, h = innerHeight;
+    ren.setSize(w, h, false);
+    cam.aspect = w / h;
+    cam.updateProjectionMatrix();
+    earth.position.set(w > 760 ? 1.35 : 0, w > 760 ? -0.1 : -1.15, 0);
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  function tick(){
+    requestAnimationFrame(tick);
+    if (!sp.classList.contains('on')) return;
+    earth.rotation.y += 0.0018;
+    clouds.rotation.y += 0.0006;
+    ren.render(sc, cam);
+  }
+  tick();
+})();
+</script>""".replace('__SPLASH_TEX__', json.dumps(TEX))
+
+hub = hub.replace('</body>', SPLASH_EARTH + (('<script>' + sfx + "SFX.init('hub')</script>") if sfx else '') + LOADER + '</body>')
 
 out = root / 'odyssey.html'
 out.write_text(hub, encoding='utf-8')
